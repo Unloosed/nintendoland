@@ -13,8 +13,14 @@ import {
 } from './systems.js';
 
 function init() {
-    initInput();
-    setupUI();
+    console.log('Initializing game...');
+    try {
+        initInput();
+        setupUI();
+        console.log('Input and UI setup complete.');
+    } catch (e) {
+        console.error('Error during initialization:', e);
+    }
 
     let lastTime = performance.now();
 
@@ -34,8 +40,6 @@ function init() {
             objectiveSystem(state.world, dt);
             scoringSystem(state.world);
 
-            updateHUD();
-
             if (isKeyPressed('KeyR')) {
                 location.reload();
             }
@@ -46,6 +50,7 @@ function init() {
             }
         }
 
+        updateHUD();
         render();
         requestAnimationFrame(loop);
     }
@@ -53,4 +58,8 @@ function init() {
     requestAnimationFrame(loop);
 }
 
-document.addEventListener('DOMContentLoaded', init);
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
