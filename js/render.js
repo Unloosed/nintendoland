@@ -1,10 +1,13 @@
 import { state } from "./game-state.js";
+import { updateDebugMetrics, drawDebugHUD } from "./debug.js";
 
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas?.getContext("2d");
 
 export function render() {
   if (!ctx) return;
+
+  updateDebugMetrics();
 
   const { width, height } = canvas;
   ctx.clearRect(0, 0, width, height);
@@ -26,6 +29,9 @@ export function render() {
   if (state.ui.showMinimap) {
     drawMinimap();
   }
+
+  // Always draw debug HUD for this milestone
+  drawDebugHUD(ctx);
 }
 
 function drawGrid(w, h) {

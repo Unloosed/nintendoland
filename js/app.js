@@ -1,7 +1,27 @@
-import { state, createEntity } from "./game-state.js";
+import { state, createEntity, setPhase, Phases } from "./game-state.js";
 import { levels } from "./levels.js";
 
+export function initLobby() {
+  setPhase(Phases.LOBBY);
+  state.world.map.blockers = [
+    { x: 400, y: 200, w: 480, h: 40 },
+    { x: 400, y: 480, w: 480, h: 40 },
+  ];
+
+  const player = createEntity({
+    role: "lobby_player",
+    x: 640,
+    y: 360,
+    radius: 15,
+    color: "#30d5c8",
+    speed: 200,
+  });
+  state.playerId = player.id;
+  state.running = true;
+}
+
 export function initApp() {
+  setPhase(Phases.MATCH);
   const availableLevels = levels[state.mode];
   const level =
     availableLevels[Math.floor(Math.random() * availableLevels.length)];

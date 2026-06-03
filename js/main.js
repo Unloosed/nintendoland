@@ -1,4 +1,4 @@
-import { state } from "./game-state.js";
+import { state, Phases, setPhase } from "./game-state.js";
 import { initInput, isKeyPressed, keys } from "./input.js";
 import { setupUI, updateHUD } from "./ui.js";
 import { render } from "./render.js";
@@ -17,7 +17,8 @@ function init() {
   try {
     initInput();
     setupUI();
-    console.log("Input and UI setup complete.");
+    setPhase(Phases.FRONTEND);
+    console.log("Input and UI setup complete. Phase set to FRONTEND.");
   } catch (e) {
     console.error("Error during initialization:", e);
   }
@@ -28,25 +29,31 @@ function init() {
     const dt = Math.min(0.1, (now - lastTime) / 1000);
     lastTime = now;
 
-    if (state.running) {
-      state.tick++;
+    // Simulation runs during LOBBY and MATCH
+    if (state.currentPhase === Phases.LOBBY || state.currentPhase === Phases.MATCH) {
+      if (state.running) {
+        state.tick++;
 
-      // System Orchestration
-      aiSystem(state.world, dt);
-      movementSystem(state.world, dt);
-      batterySystem(state.world, dt);
-      visibilitySystem(state.world, dt);
-      interactionSystem(state.world, dt);
-      objectiveSystem(state.world, dt);
-      scoringSystem(state.world);
+        // System Orchestration
+        aiSystem(state.world, dt);
+        movementSystem(state.world, dt);
 
-      if (isKeyPressed("KeyR")) {
-        location.reload();
-      }
-      if (isKeyPressed("KeyM")) {
-        state.ui.showMinimap = !state.ui.showMinimap;
-        // Add a small delay to avoid rapid toggling
-        keys.delete("KeyM");
+        if (state.currentPhase === Phases.MATCH) {
+          batterySystem(state.world, dt);
+          visibilitySystem(state.world, dt);
+          interactionSystem(state.world, dt);
+          objectiveSystem(state.world, dt);
+          scoringSystem(state.world);
+        }
+
+        if (isKeyPressed("KeyR")) {
+          location.reload();
+        }
+        if (isKeyPressed("KeyM")) {
+          state.ui.showMinimap = !state.ui.showMinimap;
+          // Add a small delay to avoid rapid toggling
+          keys.delete("KeyM");
+        }
       }
     }
 
