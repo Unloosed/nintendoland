@@ -1,10 +1,65 @@
-import { state, createEntity } from "./game-state.js";
+import { state, createEntity, setPhase, Phases } from "./game-state.js";
 import { levels } from "./levels.js";
 
+/**
+ * Data-driven role definitions.
+ */
+const Roles = {
+  mario: {
+    maxSpeed: 172,
+    acceleration: 12,
+    radius: 14,
+    color: "#30d5c8",
+    abilities: ["burst_dash"],
+    camera: "chase"
+  },
+  chaser: {
+    maxSpeed: 158,
+    acceleration: 10,
+    radius: 13,
+    color: "#59a9ff",
+    abilities: [],
+    camera: "topdown"
+  },
+  ghost: {
+    maxSpeed: 165,
+    radius: 13,
+    color: "#ff6b88",
+    abilities: [],
+    camera: "chase"
+  },
+  tracker: {
+    maxSpeed: 155,
+    radius: 14,
+    color: "#59a9ff",
+    abilities: ["flashlight"],
+    camera: "topdown"
+  }
+};
+
+export function initLobby() {
+  setPhase(Phases.LOBBY);
+  state.world.map.blockers = [
+    { x: 400, y: 200, w: 480, h: 40 },
+    { x: 400, y: 480, w: 480, h: 40 },
+  ];
+
+  const player = createEntity({
+    role: "lobby_player",
+    x: 640,
+    y: 360,
+    radius: 15,
+    color: "#30d5c8",
+    speed: 200,
+  });
+  state.playerId = player.id;
+  state.running = true;
+}
+
 export function initApp() {
+  setPhase(Phases.MATCH);
   const availableLevels = levels[state.mode];
-  const level =
-    availableLevels[Math.floor(Math.random() * availableLevels.length)];
+  const level = availableLevels[Math.floor(Math.random() * availableLevels.length)];
   state.world.map.blockers = level.blockers;
 
   if (state.mode === "mario_chase") {
@@ -19,28 +74,25 @@ export function initApp() {
 
 function initMarioChase() {
   state.timeLeft = 20000;
+  const config = Roles.mario;
 
   const mario = createEntity({
     role: "mario",
     x: 180,
     y: 360,
-    radius: 14,
-    color: "#30d5c8",
-    speed: 172,
-    energy: 100,
+    ...config,
     ai: state.role !== "mario",
   });
 
   if (state.role === "mario") state.playerId = mario.id;
 
   for (let i = 0; i < 3; i++) {
+    const chaserConfig = Roles.chaser;
     const chaser = createEntity({
       role: "chaser",
       x: 1000 + i * 30,
       y: 200 + i * 150,
-      radius: 13,
-      color: "#59a9ff",
-      speed: 158,
+      ...chaserConfig,
       ai: true,
     });
     if (state.role === "chaser" && i === 0) {
@@ -52,14 +104,13 @@ function initMarioChase() {
 
 function initGhostMansion() {
   state.timeLeft = 18000;
+  const ghostConfig = Roles.ghost;
 
   const ghost = createEntity({
     role: "ghost",
     x: 190,
     y: 360,
-    radius: 13,
-    color: "#ff6b88",
-    speed: 165,
+    ...ghostConfig,
     energy: 100,
     ai: state.role !== "ghost",
   });
@@ -67,13 +118,12 @@ function initGhostMansion() {
   if (state.role === "ghost") state.playerId = ghost.id;
 
   for (let i = 0; i < 3; i++) {
+    const trackerConfig = Roles.tracker;
     const tracker = createEntity({
       role: "tracker",
-      x: 1100 + i * 40, // Moved from 1000 to avoid wall at x=1000
+      x: 1100 + i * 40,
       y: 100 + i * 200,
-      radius: 14,
-      color: "#59a9ff",
-      speed: 155,
+      ...trackerConfig,
       battery: 100,
       fainted: false,
       reviveProgress: 0,
@@ -87,21 +137,6 @@ function initGhostMansion() {
   }
 
   // Power-ups
-  createEntity({
-    type: "powerup",
-    kind: "battery",
-    x: 640,
-    y: 360,
-    radius: 8,
-    color: "#f5c451",
-  });
-
-  createEntity({
-    type: "powerup",
-    kind: "super_battery",
-    x: 640,
-    y: 100,
-    radius: 10,
-    color: "#30d5c8",
-  });
+  createEntity({ type: "powerup", kind: "battery", x: 640, y: 360, radius: 8, color: "#f5c451" });
+  createEntity({ type: "powerup", kind: "super_battery", x: 640, y: 100, radius: 10, color: "#30d5c8" });
 }

@@ -1,11 +1,13 @@
-import { state, resetState } from "./game-state.js";
-import { initApp } from "./app.js";
+import { state, resetState, setPhase, Phases } from "./game-state.js";
+import { initApp, initLobby } from "./app.js";
 
 export function setupUI() {
   const ui = {
     modeGrid: document.getElementById("modeGrid"),
     roleGrid: document.getElementById("roleGrid"),
     startButton: document.getElementById("startButton"),
+    launchButton: document.getElementById("launchButton"),
+    lobbyControls: document.getElementById("lobbyControls"),
     cycleButton: document.getElementById("cycleButton"),
     playAgainButton: document.getElementById("playAgainButton"),
     menuToggle: document.getElementById("menuToggle"),
@@ -75,9 +77,19 @@ export function setupUI() {
   if (ui.startButton) {
     ui.startButton.onclick = (e) => {
       e.preventDefault();
-      console.log("Start button clicked");
+      console.log("Start button clicked, going to Lobby");
       if (ui.startOverlay) ui.startOverlay.classList.add("hidden");
+      initLobby();
+      if (ui.lobbyControls) ui.lobbyControls.classList.remove("hidden");
+    };
+  }
+
+  if (ui.launchButton) {
+    ui.launchButton.onclick = (e) => {
+      e.preventDefault();
+      console.log("Launch Match clicked");
       initApp();
+      if (ui.lobbyControls) ui.lobbyControls.classList.add("hidden");
     };
   }
 
@@ -97,7 +109,8 @@ export function setupUI() {
       e.preventDefault();
       if (ui.resultOverlay) ui.resultOverlay.classList.add("hidden");
       resetState();
-      initApp();
+      initLobby();
+      if (ui.lobbyControls) ui.lobbyControls.classList.remove("hidden");
     };
   }
 
@@ -114,17 +127,21 @@ export function setupUI() {
 export function updateHUD() {
   const modeTitleEl = document.getElementById("hudModeTitle");
   if (modeTitleEl) {
-    const modeName =
-      state.mode === "mario_chase" ? "Mario Chase" : "Luigi's Ghost Mansion";
-    const roleName =
-      state.role === "mario"
-        ? "Mario"
-        : state.role === "chaser"
-          ? "Chaser"
-          : state.role === "ghost"
-            ? "Ghost"
-            : "Ghost Hunter";
-    modeTitleEl.textContent = `${modeName} · ${roleName}`;
+    if (state.currentPhase === Phases.LOBBY) {
+      modeTitleEl.textContent = "Party Lobby";
+    } else {
+      const modeName =
+        state.mode === "mario_chase" ? "Mario Chase" : "Luigi's Ghost Mansion";
+      const roleName =
+        state.role === "mario"
+          ? "Mario"
+          : state.role === "chaser"
+            ? "Chaser"
+            : state.role === "ghost"
+              ? "Ghost"
+              : "Ghost Hunter";
+      modeTitleEl.textContent = `${modeName} · ${roleName}`;
+    }
   }
 
   const timerEl = document.getElementById("hudTimer");
@@ -134,10 +151,14 @@ export function updateHUD() {
   const resultOverlay = document.getElementById("resultOverlay");
 
   if (timerEl) {
-    const totalSec = Math.ceil(state.timeLeft / 1000);
-    const mm = String(Math.floor(totalSec / 60)).padStart(2, "0");
-    const ss = String(totalSec % 60).padStart(2, "0");
-    timerEl.textContent = `${mm}:${ss}`;
+    if (state.currentPhase === Phases.LOBBY) {
+      timerEl.textContent = "--:--";
+    } else {
+      const totalSec = Math.ceil(state.timeLeft / 1000);
+      const mm = String(Math.floor(totalSec / 60)).padStart(2, "0");
+      const ss = String(totalSec % 60).padStart(2, "0");
+      timerEl.textContent = `${mm}:${ss}`;
+    }
   }
 
   const player = state.world.entities.find((e) => e.id === state.playerId);
@@ -148,11 +169,15 @@ export function updateHUD() {
       energyEl.textContent = Math.round(player.energy || 0);
     }
     scoreEl.textContent = Math.round(player.score || 0);
+  } else {
+    energyEl.textContent = "0";
+    scoreEl.textContent = "0";
   }
 
-  stateEl.textContent = state.running ? "Live" : "Ready";
+  stateEl.textContent = state.currentPhase;
 
   if (state.result && resultOverlay.classList.contains("hidden")) {
+    setPhase(Phases.RESULTS);
     document.getElementById("resultTitle").textContent = state.result.success
       ? "Victory"
       : "Defeat";
