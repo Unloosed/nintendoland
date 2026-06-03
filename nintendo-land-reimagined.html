@@ -1,856 +1,1977 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" data-theme="dark">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Nintendo Land Reimagined Prototype</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root, [data-theme="light"] {
-      --font-display: 'Orbitron', sans-serif;
-      --font-body: 'Inter', sans-serif;
-      --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
-      --text-sm: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
-      --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
-      --text-lg: clamp(1.125rem, 1rem + 0.75vw, 1.5rem);
-      --text-xl: clamp(1.5rem, 1.2rem + 1.25vw, 2.25rem);
-      --text-2xl: clamp(2rem, 1.2rem + 2.5vw, 3.5rem);
-      --space-1: .25rem; --space-2: .5rem; --space-3: .75rem; --space-4: 1rem; --space-5: 1.25rem; --space-6: 1.5rem; --space-8: 2rem; --space-10: 2.5rem; --space-12: 3rem;
-      --radius-sm: .375rem; --radius-md: .5rem; --radius-lg: .75rem; --radius-xl: 1rem; --radius-full: 9999px;
-      --color-bg: #0c1014;
-      --color-surface: rgba(14, 19, 28, 0.86);
-      --color-surface-2: rgba(21, 28, 39, 0.93);
-      --color-surface-offset: rgba(28, 36, 49, 0.92);
-      --color-border: rgba(163, 196, 212, 0.18);
-      --color-divider: rgba(163, 196, 212, 0.12);
-      --color-text: #edf4fa;
-      --color-text-muted: #acc0cf;
-      --color-text-faint: #708295;
-      --color-primary: #30d5c8;
-      --color-primary-hover: #21b7ab;
-      --color-blue: #59a9ff;
-      --color-gold: #f5c451;
-      --color-error: #ff6b88;
-      --color-success: #6ecb7d;
-      --shadow-md: 0 12px 32px rgba(0,0,0,.28);
-      --shadow-lg: 0 24px 60px rgba(0,0,0,.38);
-      --transition: 180ms cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    * { box-sizing: border-box; }
-    html, body { margin:0; min-height:100%; }
-    body {
-      font-family: var(--font-body);
-      font-size: var(--text-base);
-      color: var(--color-text);
-      background:
-        radial-gradient(circle at top, rgba(48,213,200,.14), transparent 28%),
-        radial-gradient(circle at 80% 20%, rgba(89,169,255,.12), transparent 24%),
-        linear-gradient(180deg, #081017 0%, #0b1015 55%, #090d12 100%);
-      overflow: hidden;
-    }
-    button, select { font: inherit; }
-    .app { display:grid; grid-template-columns: 320px 1fr; min-height:100vh; }
-    .sidebar, .overlay-card, .hud-panel, .modal {
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      box-shadow: var(--shadow-md);
-      backdrop-filter: blur(16px);
-    }
-    .sidebar {
-      padding: var(--space-6);
-      border-right: 1px solid var(--color-divider);
-      display:flex; flex-direction:column; gap: var(--space-5);
-      overflow:auto;
-    }
-    .logo { display:flex; align-items:center; gap: var(--space-3); }
-    .logo svg { width:42px; height:42px; color: var(--color-primary); }
-    .eyebrow { color: var(--color-primary); text-transform: uppercase; letter-spacing:.18em; font-size: var(--text-xs); }
-    h1, h2, h3 { margin:0; line-height:1.1; }
-    h1 { font-family: var(--font-display); font-size: var(--text-xl); }
-    h2 { font-size: var(--text-lg); }
-    h3 { font-size: var(--text-base); }
-    p { margin:0; color: var(--color-text-muted); max-width: 60ch; }
-    .panel { background: var(--color-surface-2); border:1px solid var(--color-border); border-radius: var(--radius-lg); padding: var(--space-4); }
-    .stack { display:flex; flex-direction:column; gap: var(--space-3); }
-    .mode-grid, .role-grid { display:grid; gap: var(--space-3); }
-    .chip-row { display:flex; flex-wrap:wrap; gap: var(--space-2); }
-    .chip {
-      display:inline-flex; align-items:center; gap:.4rem; padding:.38rem .7rem; border-radius: var(--radius-full);
-      background: rgba(48,213,200,.12); color: var(--color-text); font-size: var(--text-xs); border:1px solid rgba(48,213,200,.22);
-    }
-    .mode-card, .role-card {
-      width:100%; text-align:left; cursor:pointer; border:none; border-radius: var(--radius-lg); padding: var(--space-4);
-      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)); color: var(--color-text);
-      border:1px solid var(--color-border); transition: transform var(--transition), border-color var(--transition), background var(--transition);
-    }
-    .mode-card:hover, .role-card:hover, .mode-card.active, .role-card.active { transform: translateY(-2px); border-color: rgba(48,213,200,.5); background: rgba(48,213,200,.11); }
-    .mode-card small, .role-card small { display:block; color: var(--color-text-faint); margin-top:.45rem; }
-    .controls { display:grid; gap: var(--space-2); color: var(--color-text-muted); font-size: var(--text-sm); }
-    .controls kbd { background: rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.1); padding:.15rem .45rem; border-radius:.35rem; color: var(--color-text); }
-    .main { position:relative; min-height:100vh; }
-    #gameCanvas { width:100%; height:100vh; display:block; }
-    .hud {
-      position:absolute; inset:0; pointer-events:none; display:flex; flex-direction:column; justify-content:space-between; padding: var(--space-5);
-    }
-    .hud-top, .hud-bottom { display:flex; justify-content:space-between; gap: var(--space-4); align-items:flex-start; }
-    .hud-bottom { align-items:flex-end; }
-    .hud-panel { border-radius: var(--radius-lg); padding: var(--space-3) var(--space-4); max-width:min(420px, 100%); }
-    .hud-title { font-family: var(--font-display); font-size: var(--text-sm); letter-spacing:.08em; text-transform: uppercase; }
-    .hud-value { font-size: var(--text-lg); font-weight:700; font-variant-numeric: tabular-nums lining-nums; }
-    .objective-list { display:grid; gap:.45rem; margin-top:.5rem; font-size: var(--text-sm); color: var(--color-text-muted); }
-    .objective-item.active { color: var(--color-text); }
-    .legend { display:flex; flex-wrap:wrap; gap:.5rem; }
-    .legend span { display:inline-flex; align-items:center; gap:.45rem; font-size: var(--text-xs); color: var(--color-text-muted); }
-    .legend i { width:12px; height:12px; border-radius:999px; display:inline-block; }
-    .overlay-card {
-      position:absolute; top:50%; left:50%; transform: translate(-50%, -50%);
-      width:min(760px, calc(100% - 2rem)); border-radius: var(--radius-xl); padding: var(--space-6); pointer-events:auto;
-    }
-    .overlay-actions { display:flex; flex-wrap:wrap; gap: var(--space-3); margin-top: var(--space-5); }
-    .btn {
-      pointer-events:auto; cursor:pointer; border:none; border-radius: var(--radius-md); min-height:44px; padding: .8rem 1rem;
-      transition: transform var(--transition), background var(--transition), border-color var(--transition);
-    }
-    .btn:hover { transform: translateY(-1px); }
-    .btn-primary { background: var(--color-primary); color:#041314; font-weight:700; }
-    .btn-secondary { background: rgba(255,255,255,.05); color: var(--color-text); border:1px solid var(--color-border); }
-    .status-grid { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: var(--space-3); margin-top: var(--space-4); }
-    .metric { background: rgba(255,255,255,.03); border:1px solid var(--color-divider); border-radius: var(--radius-lg); padding: var(--space-3); }
-    .metric label { display:block; color: var(--color-text-faint); font-size: var(--text-xs); text-transform: uppercase; letter-spacing:.08em; }
-    .metric strong { display:block; margin-top:.35rem; font-size: var(--text-lg); }
-    .footer-note { margin-top:auto; font-size: var(--text-xs); color: var(--color-text-faint); }
-    .hidden { display:none !important; }
-    .toast {
-      position:absolute; right: var(--space-5); bottom: calc(var(--space-5) + 110px); max-width:360px;
-      padding: var(--space-3) var(--space-4); border-radius: var(--radius-lg); background: rgba(9,15,21,.92); border:1px solid var(--color-border);
-      color: var(--color-text); box-shadow: var(--shadow-lg); opacity:0; transform:translateY(10px); transition: opacity var(--transition), transform var(--transition);
-    }
-    .toast.show { opacity:1; transform:translateY(0); }
-    @media (max-width: 980px) {
-      body { overflow:auto; }
-      .app { grid-template-columns: 1fr; }
-      .sidebar { min-height:auto; border-right:none; border-bottom:1px solid var(--color-divider); }
-      .main, #gameCanvas { height: 72vh; min-height: 480px; }
-      .hud-top, .hud-bottom { flex-direction:column; align-items:stretch; }
-      .status-grid { grid-template-columns: 1fr; }
-    }
-  </style>
-</head>
-<body>
-  <div class="app">
-    <aside class="sidebar">
-      <div class="logo">
-        <svg viewBox="0 0 64 64" fill="none" aria-label="Prototype logo" role="img">
-          <circle cx="32" cy="32" r="24" stroke="currentColor" stroke-width="4" />
-          <path d="M20 40L32 18L44 40" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
-          <path d="M26 33H38" stroke="currentColor" stroke-width="5" stroke-linecap="round" />
-        </svg>
-        <div>
-          <div class="eyebrow">Shared Runtime Prototype</div>
-          <h1>Nintendo Land Reimagined</h1>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Nintendo Land Reimagined Prototype</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&family=Inter:wght@400;500;600;700&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            :root,
+            [data-theme="light"] {
+                --font-display: "Orbitron", sans-serif;
+                --font-body: "Inter", sans-serif;
+                --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+                --text-sm: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
+                --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+                --text-lg: clamp(1.125rem, 1rem + 0.75vw, 1.5rem);
+                --text-xl: clamp(1.5rem, 1.2rem + 1.25vw, 2.25rem);
+                --text-2xl: clamp(2rem, 1.2rem + 2.5vw, 3.5rem);
+                --space-1: 0.25rem;
+                --space-2: 0.5rem;
+                --space-3: 0.75rem;
+                --space-4: 1rem;
+                --space-5: 1.25rem;
+                --space-6: 1.5rem;
+                --space-8: 2rem;
+                --space-10: 2.5rem;
+                --space-12: 3rem;
+                --radius-sm: 0.375rem;
+                --radius-md: 0.5rem;
+                --radius-lg: 0.75rem;
+                --radius-xl: 1rem;
+                --radius-full: 9999px;
+                --color-bg: #0c1014;
+                --color-surface: rgba(14, 19, 28, 0.86);
+                --color-surface-2: rgba(21, 28, 39, 0.93);
+                --color-surface-offset: rgba(28, 36, 49, 0.92);
+                --color-border: rgba(163, 196, 212, 0.18);
+                --color-divider: rgba(163, 196, 212, 0.12);
+                --color-text: #edf4fa;
+                --color-text-muted: #acc0cf;
+                --color-text-faint: #708295;
+                --color-primary: #30d5c8;
+                --color-primary-hover: #21b7ab;
+                --color-blue: #59a9ff;
+                --color-gold: #f5c451;
+                --color-error: #ff6b88;
+                --color-success: #6ecb7d;
+                --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.28);
+                --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.38);
+                --transition: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+            }
+            * {
+                box-sizing: border-box;
+            }
+            html,
+            body {
+                margin: 0;
+                min-height: 100%;
+            }
+            body {
+                font-family: var(--font-body);
+                font-size: var(--text-base);
+                color: var(--color-text);
+                background:
+                    radial-gradient(
+                        circle at top,
+                        rgba(48, 213, 200, 0.14),
+                        transparent 28%
+                    ),
+                    radial-gradient(
+                        circle at 80% 20%,
+                        rgba(89, 169, 255, 0.12),
+                        transparent 24%
+                    ),
+                    linear-gradient(
+                        180deg,
+                        #081017 0%,
+                        #0b1015 55%,
+                        #090d12 100%
+                    );
+                overflow: hidden;
+            }
+            button,
+            select {
+                font: inherit;
+            }
+            .app {
+                display: grid;
+                grid-template-columns: 320px 1fr;
+                min-height: 100vh;
+            }
+            .sidebar,
+            .overlay-card,
+            .hud-panel,
+            .modal {
+                background: var(--color-surface);
+                border: 1px solid var(--color-border);
+                box-shadow: var(--shadow-md);
+                backdrop-filter: blur(16px);
+            }
+            .sidebar {
+                padding: var(--space-6);
+                border-right: 1px solid var(--color-divider);
+                display: flex;
+                flex-direction: column;
+                gap: var(--space-5);
+                overflow: auto;
+            }
+            .logo {
+                display: flex;
+                align-items: center;
+                gap: var(--space-3);
+            }
+            .logo svg {
+                width: 42px;
+                height: 42px;
+                color: var(--color-primary);
+            }
+            .eyebrow {
+                color: var(--color-primary);
+                text-transform: uppercase;
+                letter-spacing: 0.18em;
+                font-size: var(--text-xs);
+            }
+            h1,
+            h2,
+            h3 {
+                margin: 0;
+                line-height: 1.1;
+            }
+            h1 {
+                font-family: var(--font-display);
+                font-size: var(--text-xl);
+            }
+            h2 {
+                font-size: var(--text-lg);
+            }
+            h3 {
+                font-size: var(--text-base);
+            }
+            p {
+                margin: 0;
+                color: var(--color-text-muted);
+                max-width: 60ch;
+            }
+            .panel {
+                background: var(--color-surface-2);
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-lg);
+                padding: var(--space-4);
+            }
+            .stack {
+                display: flex;
+                flex-direction: column;
+                gap: var(--space-3);
+            }
+            .mode-grid,
+            .role-grid {
+                display: grid;
+                gap: var(--space-3);
+            }
+            .chip-row {
+                display: flex;
+                flex-wrap: wrap;
+                gap: var(--space-2);
+            }
+            .chip {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.4rem;
+                padding: 0.38rem 0.7rem;
+                border-radius: var(--radius-full);
+                background: rgba(48, 213, 200, 0.12);
+                color: var(--color-text);
+                font-size: var(--text-xs);
+                border: 1px solid rgba(48, 213, 200, 0.22);
+            }
+            .mode-card,
+            .role-card {
+                width: 100%;
+                text-align: left;
+                cursor: pointer;
+                border: none;
+                border-radius: var(--radius-lg);
+                padding: var(--space-4);
+                background: linear-gradient(
+                    180deg,
+                    rgba(255, 255, 255, 0.03),
+                    rgba(255, 255, 255, 0.01)
+                );
+                color: var(--color-text);
+                border: 1px solid var(--color-border);
+                transition:
+                    transform var(--transition),
+                    border-color var(--transition),
+                    background var(--transition);
+            }
+            .mode-card:hover,
+            .role-card:hover,
+            .mode-card.active,
+            .role-card.active {
+                transform: translateY(-2px);
+                border-color: rgba(48, 213, 200, 0.5);
+                background: rgba(48, 213, 200, 0.11);
+            }
+            .mode-card small,
+            .role-card small {
+                display: block;
+                color: var(--color-text-faint);
+                margin-top: 0.45rem;
+            }
+            .controls {
+                display: grid;
+                gap: var(--space-2);
+                color: var(--color-text-muted);
+                font-size: var(--text-sm);
+            }
+            .controls kbd {
+                background: rgba(255, 255, 255, 0.08);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                padding: 0.15rem 0.45rem;
+                border-radius: 0.35rem;
+                color: var(--color-text);
+            }
+            .main {
+                position: relative;
+                min-height: 100vh;
+            }
+            #gameCanvas {
+                width: 100%;
+                height: 100vh;
+                display: block;
+            }
+            .hud {
+                position: absolute;
+                inset: 0;
+                pointer-events: none;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                padding: var(--space-5);
+            }
+            .hud-top,
+            .hud-bottom {
+                display: flex;
+                justify-content: space-between;
+                gap: var(--space-4);
+                align-items: flex-start;
+            }
+            .hud-bottom {
+                align-items: flex-end;
+            }
+            .hud-panel {
+                border-radius: var(--radius-lg);
+                padding: var(--space-3) var(--space-4);
+                max-width: min(420px, 100%);
+            }
+            .hud-title {
+                font-family: var(--font-display);
+                font-size: var(--text-sm);
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+            }
+            .hud-value {
+                font-size: var(--text-lg);
+                font-weight: 700;
+                font-variant-numeric: tabular-nums lining-nums;
+            }
+            .objective-list {
+                display: grid;
+                gap: 0.45rem;
+                margin-top: 0.5rem;
+                font-size: var(--text-sm);
+                color: var(--color-text-muted);
+            }
+            .objective-item.active {
+                color: var(--color-text);
+            }
+            .legend {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+            .legend span {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.45rem;
+                font-size: var(--text-xs);
+                color: var(--color-text-muted);
+            }
+            .legend i {
+                width: 12px;
+                height: 12px;
+                border-radius: 999px;
+                display: inline-block;
+            }
+            .overlay-card {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: min(760px, calc(100% - 2rem));
+                border-radius: var(--radius-xl);
+                padding: var(--space-6);
+                pointer-events: auto;
+            }
+            .overlay-actions {
+                display: flex;
+                flex-wrap: wrap;
+                gap: var(--space-3);
+                margin-top: var(--space-5);
+            }
+            .btn {
+                pointer-events: auto;
+                cursor: pointer;
+                border: none;
+                border-radius: var(--radius-md);
+                min-height: 44px;
+                padding: 0.8rem 1rem;
+                transition:
+                    transform var(--transition),
+                    background var(--transition),
+                    border-color var(--transition);
+            }
+            .btn:hover {
+                transform: translateY(-1px);
+            }
+            .btn-primary {
+                background: var(--color-primary);
+                color: #041314;
+                font-weight: 700;
+            }
+            .btn-secondary {
+                background: rgba(255, 255, 255, 0.05);
+                color: var(--color-text);
+                border: 1px solid var(--color-border);
+            }
+            .status-grid {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: var(--space-3);
+                margin-top: var(--space-4);
+            }
+            .metric {
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid var(--color-divider);
+                border-radius: var(--radius-lg);
+                padding: var(--space-3);
+            }
+            .metric label {
+                display: block;
+                color: var(--color-text-faint);
+                font-size: var(--text-xs);
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+            }
+            .metric strong {
+                display: block;
+                margin-top: 0.35rem;
+                font-size: var(--text-lg);
+            }
+            .footer-note {
+                margin-top: auto;
+                font-size: var(--text-xs);
+                color: var(--color-text-faint);
+            }
+            .hidden {
+                display: none !important;
+            }
+            .toast {
+                position: absolute;
+                right: var(--space-5);
+                bottom: calc(var(--space-5) + 110px);
+                max-width: 360px;
+                padding: var(--space-3) var(--space-4);
+                border-radius: var(--radius-lg);
+                background: rgba(9, 15, 21, 0.92);
+                border: 1px solid var(--color-border);
+                color: var(--color-text);
+                box-shadow: var(--shadow-lg);
+                opacity: 0;
+                transform: translateY(10px);
+                transition:
+                    opacity var(--transition),
+                    transform var(--transition);
+            }
+            .toast.show {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            @media (max-width: 980px) {
+                body {
+                    overflow: auto;
+                }
+                .app {
+                    grid-template-columns: 1fr;
+                }
+                .sidebar {
+                    min-height: auto;
+                    border-right: none;
+                    border-bottom: 1px solid var(--color-divider);
+                }
+                .main,
+                #gameCanvas {
+                    height: 72vh;
+                    min-height: 480px;
+                }
+                .hud-top,
+                .hud-bottom {
+                    flex-direction: column;
+                    align-items: stretch;
+                }
+                .status-grid {
+                    grid-template-columns: 1fr;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="app">
+            <aside class="sidebar">
+                <div class="logo">
+                    <svg
+                        viewBox="0 0 64 64"
+                        fill="none"
+                        aria-label="Prototype logo"
+                        role="img"
+                    >
+                        <circle
+                            cx="32"
+                            cy="32"
+                            r="24"
+                            stroke="currentColor"
+                            stroke-width="4"
+                        />
+                        <path
+                            d="M20 40L32 18L44 40"
+                            stroke="currentColor"
+                            stroke-width="5"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        />
+                        <path
+                            d="M26 33H38"
+                            stroke="currentColor"
+                            stroke-width="5"
+                            stroke-linecap="round"
+                        />
+                    </svg>
+                    <div>
+                        <div class="eyebrow">Shared Runtime Prototype</div>
+                        <h1>Nintendo Land Reimagined</h1>
+                    </div>
+                </div>
+
+                <div class="panel stack">
+                    <h2>Architecture slice</h2>
+                    <p>
+                        This playable build implements one executable, one
+                        ECS-style simulation, role-specific knowledge,
+                        fixed-step rules, and a server-authoritative feel
+                        through local command validation and filtered HUD data.
+                    </p>
+                    <div class="chip-row">
+                        <span class="chip">30 Hz simulation</span>
+                        <span class="chip">Asymmetric roles</span>
+                        <span class="chip">Visibility system</span>
+                        <span class="chip">Shared systems</span>
+                    </div>
+                </div>
+
+                <div class="panel stack">
+                    <h2>Attraction package</h2>
+                    <div id="modeGrid" class="mode-grid"></div>
+                </div>
+
+                <div class="panel stack">
+                    <h2>Role profile</h2>
+                    <div id="roleGrid" class="role-grid"></div>
+                </div>
+
+                <div class="panel controls">
+                    <h2>Controls</h2>
+                    <div><kbd>WASD</kbd> Move</div>
+                    <div><kbd>Shift</kbd> Sprint or burst</div>
+                    <div><kbd>Space</kbd> Primary ability</div>
+                    <div><kbd>E</kbd> Context action</div>
+                    <div><kbd>R</kbd> Restart round</div>
+                    <div><kbd>M</kbd> Toggle tactical minimap</div>
+                </div>
+
+                <div class="footer-note">
+                    Prototype scope: Mario Chase and Luigi's Ghost Mansion
+                    implemented with shared movement, objective, visibility, AI,
+                    and scoring systems.
+                </div>
+            </aside>
+
+            <main class="main">
+                <canvas
+                    id="gameCanvas"
+                    width="1280"
+                    height="720"
+                    aria-label="Game canvas"
+                ></canvas>
+                <div class="hud">
+                    <div class="hud-top">
+                        <div class="hud-panel">
+                            <div class="hud-title" id="hudModeTitle">
+                                Mario Chase
+                            </div>
+                            <div class="hud-value" id="hudTimer">02:00</div>
+                            <div class="objective-list" id="objectives"></div>
+                        </div>
+                        <div class="hud-panel">
+                            <div class="hud-title">Role intelligence</div>
+                            <div
+                                class="objective-list"
+                                id="knowledgeFeed"
+                            ></div>
+                        </div>
+                    </div>
+                    <div class="hud-bottom">
+                        <div class="hud-panel">
+                            <div class="legend">
+                                <span
+                                    ><i style="background: #30d5c8"></i
+                                    >You</span
+                                >
+                                <span
+                                    ><i style="background: #f5c451"></i
+                                    >Objective</span
+                                >
+                                <span
+                                    ><i style="background: #ff6b88"></i
+                                    >Threat</span
+                                >
+                                <span
+                                    ><i style="background: #59a9ff"></i
+                                    >Tracker</span
+                                >
+                            </div>
+                        </div>
+                        <div class="hud-panel">
+                            <div class="hud-title">Round status</div>
+                            <div class="status-grid">
+                                <div class="metric">
+                                    <label>Energy</label
+                                    ><strong id="energyMetric">100</strong>
+                                </div>
+                                <div class="metric">
+                                    <label>Score</label
+                                    ><strong id="scoreMetric">0</strong>
+                                </div>
+                                <div class="metric">
+                                    <label>State</label
+                                    ><strong id="stateMetric">Ready</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <section id="startOverlay" class="overlay-card">
+                    <div class="eyebrow">Data-driven game mode</div>
+                    <h2>Playable ECS prototype</h2>
+                    <p>
+                        This browser game turns the architecture document into a
+                        focused proof-of-concept: one runtime loads different
+                        attraction rule packs, swaps role knowledge, and reuses
+                        the same movement, collision, objective, scoring, and AI
+                        systems.
+                    </p>
+                    <div class="overlay-actions">
+                        <button class="btn btn-primary" id="startButton">
+                            Start match
+                        </button>
+                        <button class="btn btn-secondary" id="cycleButton">
+                            Cycle attraction
+                        </button>
+                    </div>
+                </section>
+
+                <section
+                    id="resultOverlay"
+                    class="overlay-card hidden"
+                    aria-live="polite"
+                >
+                    <div class="eyebrow">Round complete</div>
+                    <h2 id="resultTitle">Victory</h2>
+                    <p id="resultBody"></p>
+                    <div class="overlay-actions">
+                        <button class="btn btn-primary" id="playAgainButton">
+                            Play again
+                        </button>
+                    </div>
+                </section>
+
+                <div class="toast" id="toast"></div>
+            </main>
         </div>
-      </div>
 
-      <div class="panel stack">
-        <h2>Architecture slice</h2>
-        <p>This playable build implements one executable, one ECS-style simulation, role-specific knowledge, fixed-step rules, and a server-authoritative feel through local command validation and filtered HUD data.</p>
-        <div class="chip-row">
-          <span class="chip">30 Hz simulation</span>
-          <span class="chip">Asymmetric roles</span>
-          <span class="chip">Visibility system</span>
-          <span class="chip">Shared systems</span>
-        </div>
-      </div>
+        <script>
+            (() => {
+                const canvas = document.getElementById("gameCanvas");
+                const ctx = canvas.getContext("2d");
+                const ui = {
+                    modeGrid: document.getElementById("modeGrid"),
+                    roleGrid: document.getElementById("roleGrid"),
+                    startOverlay: document.getElementById("startOverlay"),
+                    resultOverlay: document.getElementById("resultOverlay"),
+                    resultTitle: document.getElementById("resultTitle"),
+                    resultBody: document.getElementById("resultBody"),
+                    hudModeTitle: document.getElementById("hudModeTitle"),
+                    hudTimer: document.getElementById("hudTimer"),
+                    objectives: document.getElementById("objectives"),
+                    knowledgeFeed: document.getElementById("knowledgeFeed"),
+                    energyMetric: document.getElementById("energyMetric"),
+                    scoreMetric: document.getElementById("scoreMetric"),
+                    stateMetric: document.getElementById("stateMetric"),
+                    toast: document.getElementById("toast"),
+                    startButton: document.getElementById("startButton"),
+                    cycleButton: document.getElementById("cycleButton"),
+                    playAgainButton: document.getElementById("playAgainButton"),
+                };
 
-      <div class="panel stack">
-        <h2>Attraction package</h2>
-        <div id="modeGrid" class="mode-grid"></div>
-      </div>
+                const TAU = Math.PI * 2;
+                const keys = new Set();
+                let showMinimap = true;
+                let activeMode = "mario_chase";
+                let activeRole = "runner";
+                let toastTimer = 0;
+                let game = null;
+                let audioCtx = null;
 
-      <div class="panel stack">
-        <h2>Role profile</h2>
-        <div id="roleGrid" class="role-grid"></div>
-      </div>
+                const roleCatalog = {
+                    mario_chase: [
+                        {
+                            id: "runner",
+                            name: "Mario Runner",
+                            summary:
+                                "Full-map awareness, burst mobility, survive until timer expires.",
+                            knowledge:
+                                "Exact chaser positions appear on your tactical map.",
+                            color: "#30d5c8",
+                        },
+                        {
+                            id: "chaser",
+                            name: "Toad Chaser",
+                            summary:
+                                "Distance-led pursuit, coordinated sweep, tag the runner.",
+                            knowledge:
+                                "You only get distance and last-known traces unless the runner is revealed.",
+                            color: "#59a9ff",
+                        },
+                    ],
+                    ghost_mansion: [
+                        {
+                            id: "ghost",
+                            name: "Ghost",
+                            summary:
+                                "Stealth predator, invisible unless revealed by beams.",
+                            knowledge:
+                                "You can see tracker cones and plan around battery drain.",
+                            color: "#30d5c8",
+                        },
+                        {
+                            id: "tracker",
+                            name: "Ghost Tracker",
+                            summary:
+                                "Flashlight search, battery management, coordinated reveals.",
+                            knowledge:
+                                "You receive fear pulses and proxy hints, not exact ghost state.",
+                            color: "#59a9ff",
+                        },
+                    ],
+                };
 
-      <div class="panel controls">
-        <h2>Controls</h2>
-        <div><kbd>WASD</kbd> Move</div>
-        <div><kbd>Shift</kbd> Sprint or burst</div>
-        <div><kbd>Space</kbd> Primary ability</div>
-        <div><kbd>E</kbd> Context action</div>
-        <div><kbd>R</kbd> Restart round</div>
-        <div><kbd>M</kbd> Toggle tactical minimap</div>
-      </div>
+                const modes = {
+                    mario_chase: {
+                        name: "Mario Chase",
+                        description:
+                            "One agile runner versus coordinated chasers with asymmetrical information.",
+                        objectives: {
+                            runner: [
+                                "Survive until the timer ends.",
+                                "Use burst to break lines.",
+                                "Collect beacons to gain score and brief speed boosts.",
+                            ],
+                            chaser: [
+                                "Tag the runner before time expires.",
+                                "Follow distance pings.",
+                                "Cut off routes using the last-known trail.",
+                            ],
+                        },
+                        create(role) {
+                            const world = createWorld(
+                                "mario_chase",
+                                role,
+                                20000,
+                            );
+                            const player = addEntity(
+                                world,
+                                baseEntity({
+                                    kind: "player",
+                                    role,
+                                    team:
+                                        role === "runner"
+                                            ? "runner"
+                                            : "chasers",
+                                    x: role === "runner" ? 180 : 1020,
+                                    y: role === "runner" ? 360 : 360,
+                                    radius: role === "runner" ? 14 : 13,
+                                    color:
+                                        role === "runner"
+                                            ? "#30d5c8"
+                                            : "#59a9ff",
+                                    speed: role === "runner" ? 172 : 158,
+                                    energy: 100,
+                                    score: 0,
+                                    burstCooldown: 0,
+                                    invisible: false,
+                                    reveal: 0,
+                                }),
+                            );
+                            world.playerId = player;
+                            if (role === "runner") {
+                                for (let i = 0; i < 3; i++)
+                                    spawnChaserAI(
+                                        world,
+                                        1000 + i * 32,
+                                        180 + i * 130,
+                                    );
+                            } else {
+                                addEntity(
+                                    world,
+                                    baseEntity({
+                                        kind: "runnerAI",
+                                        role: "runner",
+                                        team: "runner",
+                                        x: 200,
+                                        y: 360,
+                                        radius: 14,
+                                        color: "#ff6b88",
+                                        speed: 170,
+                                        energy: 100,
+                                        score: 0,
+                                        burstCooldown: 0,
+                                        invisible: false,
+                                        reveal: 0,
+                                    }),
+                                );
+                                for (let i = 0; i < 2; i++)
+                                    spawnChaserAI(
+                                        world,
+                                        1040 + i * 40,
+                                        260 + i * 160,
+                                        false,
+                                    );
+                            }
+                            world.map.blockers = [
+                                { x: 320, y: 110, w: 110, h: 190 },
+                                { x: 530, y: 420, w: 180, h: 120 },
+                                { x: 800, y: 160, w: 110, h: 220 },
+                                { x: 350, y: 500, w: 120, h: 90 },
+                            ];
+                            for (let i = 0; i < 6; i++) spawnBeacon(world);
+                            return world;
+                        },
+                    },
+                    ghost_mansion: {
+                        name: "Luigi's Ghost Mansion",
+                        description:
+                            "One invisible ghost against flashlight-equipped trackers with battery and reveal rules.",
+                        objectives: {
+                            ghost: [
+                                "Drain courage by approaching unseen.",
+                                "Steal haunted orbs for score.",
+                                "Avoid reveal cones and survive the round.",
+                            ],
+                            tracker: [
+                                "Reveal the ghost with your flashlight.",
+                                "Manage battery and regroup.",
+                                "Hold reveals long enough to capture the ghost.",
+                            ],
+                        },
+                        create(role) {
+                            const world = createWorld(
+                                "ghost_mansion",
+                                role,
+                                18000,
+                            );
+                            const player = addEntity(
+                                world,
+                                baseEntity({
+                                    kind: "player",
+                                    role,
+                                    team:
+                                        role === "ghost" ? "ghost" : "trackers",
+                                    x: role === "ghost" ? 190 : 1040,
+                                    y: role === "ghost" ? 360 : 360,
+                                    radius: role === "ghost" ? 13 : 14,
+                                    color:
+                                        role === "ghost"
+                                            ? "#30d5c8"
+                                            : "#59a9ff",
+                                    speed: role === "ghost" ? 165 : 155,
+                                    energy: role === "ghost" ? 100 : 82,
+                                    score: 0,
+                                    burstCooldown: 0,
+                                    invisible: role === "ghost",
+                                    reveal: 0,
+                                    battery: role === "tracker" ? 82 : 0,
+                                    fear: 0,
+                                    flashlight: role === "tracker",
+                                }),
+                            );
+                            world.playerId = player;
+                            if (role === "ghost") {
+                                for (let i = 0; i < 3; i++)
+                                    spawnTrackerAI(
+                                        world,
+                                        1000 + i * 24,
+                                        180 + i * 140,
+                                    );
+                            } else {
+                                addEntity(
+                                    world,
+                                    baseEntity({
+                                        kind: "ghostAI",
+                                        role: "ghost",
+                                        team: "ghost",
+                                        x: 210,
+                                        y: 330,
+                                        radius: 13,
+                                        color: "#ff6b88",
+                                        speed: 165,
+                                        invisible: true,
+                                        reveal: 0,
+                                        energy: 100,
+                                        score: 0,
+                                        burstCooldown: 0,
+                                        battery: 0,
+                                        fear: 0,
+                                    }),
+                                );
+                                for (let i = 0; i < 2; i++)
+                                    spawnTrackerAI(
+                                        world,
+                                        1030 + i * 42,
+                                        250 + i * 130,
+                                        false,
+                                    );
+                            }
+                            world.map.blockers = [
+                                { x: 330, y: 150, w: 150, h: 120 },
+                                { x: 560, y: 100, w: 120, h: 240 },
+                                { x: 560, y: 420, w: 170, h: 120 },
+                                { x: 860, y: 220, w: 150, h: 170 },
+                            ];
+                            for (let i = 0; i < 7; i++) spawnOrb(world);
+                            return world;
+                        },
+                    },
+                };
 
-      <div class="footer-note">Prototype scope: Mario Chase and Luigi's Ghost Mansion implemented with shared movement, objective, visibility, AI, and scoring systems.</div>
-    </aside>
+                function createWorld(mode, role, durationMs) {
+                    return {
+                        mode,
+                        role,
+                        entities: [],
+                        nextId: 1,
+                        playerId: null,
+                        timeLeft: durationMs,
+                        running: false,
+                        lastKnownThreat: null,
+                        result: null,
+                        tick: 0,
+                        map: { width: 1280, height: 720, blockers: [] },
+                        systems: [
+                            inputSystem,
+                            aiSystem,
+                            movementSystem,
+                            objectiveSystem,
+                            visibilitySystem,
+                            scoringSystem,
+                        ],
+                    };
+                }
+                function baseEntity(data) {
+                    return Object.assign(
+                        {
+                            vx: 0,
+                            vy: 0,
+                            alive: true,
+                            tagCooldown: 0,
+                            intent: {
+                                x: 0,
+                                y: 0,
+                                sprint: false,
+                                ability: false,
+                                interact: false,
+                            },
+                            reveal: 0,
+                            trail: [],
+                        },
+                        data,
+                    );
+                }
+                function addEntity(world, entity) {
+                    entity.id = world.nextId++;
+                    world.entities.push(entity);
+                    return entity.id;
+                }
+                function getEntity(world, id) {
+                    return world.entities.find((e) => e.id === id);
+                }
+                function getPlayer(world) {
+                    return getEntity(world, world.playerId);
+                }
+                function clamp(v, min, max) {
+                    return Math.max(min, Math.min(max, v));
+                }
+                function dist(a, b) {
+                    return Math.hypot(a.x - b.x, a.y - b.y);
+                }
+                function rand(min, max) {
+                    return min + Math.random() * (max - min);
+                }
+                function showToast(msg) {
+                    ui.toast.textContent = msg;
+                    ui.toast.classList.add("show");
+                    toastTimer = 2.3;
+                }
+                function ensureAudio() {
+                    if (!audioCtx)
+                        audioCtx = new (
+                            window.AudioContext || window.webkitAudioContext
+                        )();
+                    if (audioCtx.state === "suspended") audioCtx.resume();
+                }
+                function beep(
+                    freq = 520,
+                    duration = 0.08,
+                    type = "sine",
+                    volume = 0.04,
+                ) {
+                    if (!audioCtx) return;
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = type;
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(
+                        0.001,
+                        audioCtx.currentTime + duration,
+                    );
+                    osc.connect(gain).connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + duration);
+                }
 
-    <main class="main">
-      <canvas id="gameCanvas" width="1280" height="720" aria-label="Game canvas"></canvas>
-      <div class="hud">
-        <div class="hud-top">
-          <div class="hud-panel">
-            <div class="hud-title" id="hudModeTitle">Mario Chase</div>
-            <div class="hud-value" id="hudTimer">02:00</div>
-            <div class="objective-list" id="objectives"></div>
-          </div>
-          <div class="hud-panel">
-            <div class="hud-title">Role intelligence</div>
-            <div class="objective-list" id="knowledgeFeed"></div>
-          </div>
-        </div>
-        <div class="hud-bottom">
-          <div class="hud-panel">
-            <div class="legend">
-              <span><i style="background:#30d5c8"></i>You</span>
-              <span><i style="background:#f5c451"></i>Objective</span>
-              <span><i style="background:#ff6b88"></i>Threat</span>
-              <span><i style="background:#59a9ff"></i>Tracker</span>
-            </div>
-          </div>
-          <div class="hud-panel">
-            <div class="hud-title">Round status</div>
-            <div class="status-grid">
-              <div class="metric"><label>Energy</label><strong id="energyMetric">100</strong></div>
-              <div class="metric"><label>Score</label><strong id="scoreMetric">0</strong></div>
-              <div class="metric"><label>State</label><strong id="stateMetric">Ready</strong></div>
-            </div>
-          </div>
-        </div>
-      </div>
+                function spawnChaserAI(world, x, y, hostile = true) {
+                    addEntity(
+                        world,
+                        baseEntity({
+                            kind: "chaserAI",
+                            role: "chaser",
+                            team: "chasers",
+                            x,
+                            y,
+                            radius: 13,
+                            color: hostile ? "#f5c451" : "#59a9ff",
+                            speed: 157,
+                            energy: 100,
+                            score: 0,
+                            burstCooldown: 0,
+                            hostile,
+                        }),
+                    );
+                }
+                function spawnTrackerAI(world, x, y, hostile = true) {
+                    addEntity(
+                        world,
+                        baseEntity({
+                            kind: "trackerAI",
+                            role: "tracker",
+                            team: "trackers",
+                            x,
+                            y,
+                            radius: 14,
+                            color: hostile ? "#f5c451" : "#59a9ff",
+                            speed: 154,
+                            energy: 80,
+                            battery: 78,
+                            flashlight: true,
+                            hostile,
+                        }),
+                    );
+                }
+                function spawnBeacon(world) {
+                    addEntity(
+                        world,
+                        baseEntity({
+                            kind: "beacon",
+                            x: rand(120, 1160),
+                            y: rand(110, 620),
+                            radius: 9,
+                            color: "#f5c451",
+                            pulse: rand(0, TAU),
+                        }),
+                    );
+                }
+                function spawnOrb(world) {
+                    addEntity(
+                        world,
+                        baseEntity({
+                            kind: "orb",
+                            x: rand(120, 1160),
+                            y: rand(100, 620),
+                            radius: 8,
+                            color: "#f5c451",
+                            pulse: rand(0, TAU),
+                        }),
+                    );
+                }
 
-      <section id="startOverlay" class="overlay-card">
-        <div class="eyebrow">Data-driven game mode</div>
-        <h2>Playable ECS prototype</h2>
-        <p>This browser game turns the architecture document into a focused proof-of-concept: one runtime loads different attraction rule packs, swaps role knowledge, and reuses the same movement, collision, objective, scoring, and AI systems.</p>
-        <div class="overlay-actions">
-          <button class="btn btn-primary" id="startButton">Start match</button>
-          <button class="btn btn-secondary" id="cycleButton">Cycle attraction</button>
-        </div>
-      </section>
+                function setMode(modeId) {
+                    activeMode = modeId;
+                    const roles = roleCatalog[modeId];
+                    if (!roles.some((r) => r.id === activeRole))
+                        activeRole = roles[0].id;
+                    renderSelectors();
+                }
+                function setRole(roleId) {
+                    activeRole = roleId;
+                    renderSelectors();
+                }
+                function renderSelectors() {
+                    ui.modeGrid.innerHTML = "";
+                    Object.entries(modes).forEach(([id, mode]) => {
+                        const btn = document.createElement("button");
+                        btn.className =
+                            "mode-card" + (id === activeMode ? " active" : "");
+                        btn.innerHTML = `<strong>${mode.name}</strong><small>${mode.description}</small>`;
+                        btn.addEventListener("click", () => setMode(id));
+                        ui.modeGrid.appendChild(btn);
+                    });
+                    ui.roleGrid.innerHTML = "";
+                    roleCatalog[activeMode].forEach((role) => {
+                        const btn = document.createElement("button");
+                        btn.className =
+                            "role-card" +
+                            (role.id === activeRole ? " active" : "");
+                        btn.innerHTML = `<strong>${role.name}</strong><small>${role.summary}</small>`;
+                        btn.addEventListener("click", () => setRole(role.id));
+                        ui.roleGrid.appendChild(btn);
+                    });
+                }
 
-      <section id="resultOverlay" class="overlay-card hidden" aria-live="polite">
-        <div class="eyebrow">Round complete</div>
-        <h2 id="resultTitle">Victory</h2>
-        <p id="resultBody"></p>
-        <div class="overlay-actions">
-          <button class="btn btn-primary" id="playAgainButton">Play again</button>
-        </div>
-      </section>
+                function startGame() {
+                    ensureAudio();
+                    game = modes[activeMode].create(activeRole);
+                    game.running = true;
+                    ui.startOverlay.classList.add("hidden");
+                    ui.resultOverlay.classList.add("hidden");
+                    updateHUD();
+                    showToast(
+                        `${modes[activeMode].name}: ${roleCatalog[activeMode].find((r) => r.id === activeRole).name}`,
+                    );
+                    beep(480, 0.12, "triangle", 0.05);
+                }
 
-      <div class="toast" id="toast"></div>
-    </main>
-  </div>
+                function endGame(success, reason) {
+                    if (!game || game.result) return;
+                    game.running = false;
+                    game.result = { success, reason };
+                    ui.resultTitle.textContent = success
+                        ? "Objective complete"
+                        : "Round lost";
+                    ui.resultBody.textContent = reason;
+                    ui.resultOverlay.classList.remove("hidden");
+                    beep(
+                        success ? 760 : 160,
+                        success ? 0.2 : 0.3,
+                        success ? "triangle" : "sawtooth",
+                        0.06,
+                    );
+                }
 
-<script>
-(() => {
-  const canvas = document.getElementById('gameCanvas');
-  const ctx = canvas.getContext('2d');
-  const ui = {
-    modeGrid: document.getElementById('modeGrid'),
-    roleGrid: document.getElementById('roleGrid'),
-    startOverlay: document.getElementById('startOverlay'),
-    resultOverlay: document.getElementById('resultOverlay'),
-    resultTitle: document.getElementById('resultTitle'),
-    resultBody: document.getElementById('resultBody'),
-    hudModeTitle: document.getElementById('hudModeTitle'),
-    hudTimer: document.getElementById('hudTimer'),
-    objectives: document.getElementById('objectives'),
-    knowledgeFeed: document.getElementById('knowledgeFeed'),
-    energyMetric: document.getElementById('energyMetric'),
-    scoreMetric: document.getElementById('scoreMetric'),
-    stateMetric: document.getElementById('stateMetric'),
-    toast: document.getElementById('toast'),
-    startButton: document.getElementById('startButton'),
-    cycleButton: document.getElementById('cycleButton'),
-    playAgainButton: document.getElementById('playAgainButton')
-  };
+                function inputSystem(world, dt) {
+                    const player = getPlayer(world);
+                    if (!player || !player.alive) return;
+                    const moveX =
+                        (keys.has("KeyD") ? 1 : 0) - (keys.has("KeyA") ? 1 : 0);
+                    const moveY =
+                        (keys.has("KeyS") ? 1 : 0) - (keys.has("KeyW") ? 1 : 0);
+                    const len = Math.hypot(moveX, moveY) || 1;
+                    player.intent.x = moveX / len;
+                    player.intent.y = moveY / len;
+                    player.intent.sprint =
+                        keys.has("ShiftLeft") || keys.has("ShiftRight");
+                    player.intent.ability = keys.has("Space");
+                    player.intent.interact = keys.has("KeyE");
+                    player.tagCooldown = Math.max(0, player.tagCooldown - dt);
+                    player.burstCooldown = Math.max(
+                        0,
+                        player.burstCooldown - dt,
+                    );
 
-  const TAU = Math.PI * 2;
-  const keys = new Set();
-  let showMinimap = true;
-  let activeMode = 'mario_chase';
-  let activeRole = 'runner';
-  let toastTimer = 0;
-  let game = null;
-  let audioCtx = null;
+                    if (
+                        world.mode === "mario_chase" &&
+                        player.role === "runner" &&
+                        player.intent.sprint &&
+                        player.burstCooldown <= 0 &&
+                        player.energy >= 22
+                    ) {
+                        player.energy -= 22;
+                        player.burstCooldown = 1.8;
+                        player.vx += player.intent.x * 200;
+                        player.vy += player.intent.y * 200;
+                        player.score += 8;
+                        showToast("Burst dash executed.");
+                        beep(660, 0.08, "square", 0.05);
+                    }
+                    if (
+                        world.mode === "ghost_mansion" &&
+                        player.role === "ghost" &&
+                        player.intent.sprint &&
+                        player.burstCooldown <= 0 &&
+                        player.energy >= 18
+                    ) {
+                        player.energy -= 18;
+                        player.burstCooldown = 2.3;
+                        player.vx += player.intent.x * 170;
+                        player.vy += player.intent.y * 170;
+                        showToast("Phase shift triggered.");
+                        beep(620, 0.07, "triangle", 0.05);
+                    }
+                    if (
+                        world.mode === "ghost_mansion" &&
+                        player.role === "tracker"
+                    ) {
+                        player.flashlightActive =
+                            player.intent.ability && player.battery > 0;
+                    }
+                }
 
-  const roleCatalog = {
-    mario_chase: [
-      { id: 'runner', name: 'Mario Runner', summary: 'Full-map awareness, burst mobility, survive until timer expires.', knowledge: 'Exact chaser positions appear on your tactical map.', color: '#30d5c8' },
-      { id: 'chaser', name: 'Toad Chaser', summary: 'Distance-led pursuit, coordinated sweep, tag the runner.', knowledge: 'You only get distance and last-known traces unless the runner is revealed.', color: '#59a9ff' }
-    ],
-    ghost_mansion: [
-      { id: 'ghost', name: 'Ghost', summary: 'Stealth predator, invisible unless revealed by beams.', knowledge: 'You can see tracker cones and plan around battery drain.', color: '#30d5c8' },
-      { id: 'tracker', name: 'Ghost Tracker', summary: 'Flashlight search, battery management, coordinated reveals.', knowledge: 'You receive fear pulses and proxy hints, not exact ghost state.', color: '#59a9ff' }
-    ]
-  };
+                function aiSystem(world, dt) {
+                    const player = getPlayer(world);
+                    const runner = world.entities.find(
+                        (e) => e.role === "runner" || e.kind === "runnerAI",
+                    );
+                    const ghost = world.entities.find(
+                        (e) => e.role === "ghost" || e.kind === "ghostAI",
+                    );
+                    world.entities.forEach((entity) => {
+                        if (entity.id === world.playerId || !entity.alive)
+                            return;
+                        entity.tagCooldown = Math.max(
+                            0,
+                            entity.tagCooldown - dt,
+                        );
+                        entity.burstCooldown = Math.max(
+                            0,
+                            entity.burstCooldown - dt,
+                        );
+                        entity.intent = entity.intent || {
+                            x: 0,
+                            y: 0,
+                            sprint: false,
+                            ability: false,
+                            interact: false,
+                        };
+                        const target =
+                            world.mode === "mario_chase" ? runner : ghost;
+                        if (!target) return;
 
-  const modes = {
-    mario_chase: {
-      name: 'Mario Chase',
-      description: 'One agile runner versus coordinated chasers with asymmetrical information.',
-      objectives: {
-        runner: ['Survive until the timer ends.', 'Use burst to break lines.', 'Collect beacons to gain score and brief speed boosts.'],
-        chaser: ['Tag the runner before time expires.', 'Follow distance pings.', 'Cut off routes using the last-known trail.']
-      },
-      create(role) {
-        const world = createWorld('mario_chase', role, 20000);
-        const player = addEntity(world, baseEntity({
-          kind: 'player', role, team: role === 'runner' ? 'runner' : 'chasers', x: role === 'runner' ? 180 : 1020, y: role === 'runner' ? 360 : 360,
-          radius: role === 'runner' ? 14 : 13, color: role === 'runner' ? '#30d5c8' : '#59a9ff', speed: role === 'runner' ? 172 : 158, energy: 100, score: 0,
-          burstCooldown: 0, invisible: false, reveal: 0
-        }));
-        world.playerId = player;
-        if (role === 'runner') {
-          for (let i = 0; i < 3; i++) spawnChaserAI(world, 1000 + i * 32, 180 + i * 130);
-        } else {
-          addEntity(world, baseEntity({ kind:'runnerAI', role:'runner', team:'runner', x:200, y:360, radius:14, color:'#ff6b88', speed:170, energy:100, score:0, burstCooldown:0, invisible:false, reveal:0 }));
-          for (let i = 0; i < 2; i++) spawnChaserAI(world, 1040 + i * 40, 260 + i * 160, false);
-        }
-        world.map.blockers = [
-          {x: 320, y: 110, w: 110, h: 190}, {x: 530, y: 420, w: 180, h: 120}, {x: 800, y: 160, w: 110, h: 220}, {x: 350, y: 500, w: 120, h: 90}
-        ];
-        for (let i = 0; i < 6; i++) spawnBeacon(world);
-        return world;
-      }
-    },
-    ghost_mansion: {
-      name: "Luigi's Ghost Mansion",
-      description: 'One invisible ghost against flashlight-equipped trackers with battery and reveal rules.',
-      objectives: {
-        ghost: ['Drain courage by approaching unseen.', 'Steal haunted orbs for score.', 'Avoid reveal cones and survive the round.'],
-        tracker: ['Reveal the ghost with your flashlight.', 'Manage battery and regroup.', 'Hold reveals long enough to capture the ghost.']
-      },
-      create(role) {
-        const world = createWorld('ghost_mansion', role, 18000);
-        const player = addEntity(world, baseEntity({
-          kind: 'player', role, team: role === 'ghost' ? 'ghost' : 'trackers', x: role === 'ghost' ? 190 : 1040, y: role === 'ghost' ? 360 : 360,
-          radius: role === 'ghost' ? 13 : 14, color: role === 'ghost' ? '#30d5c8' : '#59a9ff', speed: role === 'ghost' ? 165 : 155,
-          energy: role === 'ghost' ? 100 : 82, score: 0, burstCooldown: 0, invisible: role === 'ghost', reveal: 0, battery: role === 'tracker' ? 82 : 0,
-          fear: 0, flashlight: role === 'tracker'
-        }));
-        world.playerId = player;
-        if (role === 'ghost') {
-          for (let i = 0; i < 3; i++) spawnTrackerAI(world, 1000 + i * 24, 180 + i * 140);
-        } else {
-          addEntity(world, baseEntity({ kind:'ghostAI', role:'ghost', team:'ghost', x:210, y:330, radius:13, color:'#ff6b88', speed:165, invisible:true, reveal:0, energy:100, score:0, burstCooldown:0, battery:0, fear:0 }));
-          for (let i = 0; i < 2; i++) spawnTrackerAI(world, 1030 + i * 42, 250 + i * 130, false);
-        }
-        world.map.blockers = [
-          {x: 330, y: 150, w: 150, h: 120}, {x: 560, y: 100, w: 120, h: 240}, {x: 560, y: 420, w: 170, h: 120}, {x: 860, y: 220, w: 150, h: 170}
-        ];
-        for (let i = 0; i < 7; i++) spawnOrb(world);
-        return world;
-      }
-    }
-  };
+                        if (entity.kind === "chaserAI") {
+                            const d = dist(entity, target);
+                            const bias = d > 220 ? 1 : 0.6;
+                            entity.intent.x =
+                                clamp(
+                                    (target.x - entity.x) / Math.max(d, 1) +
+                                        rand(-0.18, 0.18),
+                                    -1,
+                                    1,
+                                ) * bias;
+                            entity.intent.y =
+                                clamp(
+                                    (target.y - entity.y) / Math.max(d, 1) +
+                                        rand(-0.18, 0.18),
+                                    -1,
+                                    1,
+                                ) * bias;
+                            entity.intent.sprint =
+                                d > 240 &&
+                                entity.burstCooldown <= 0 &&
+                                Math.random() < 0.02;
+                            if (entity.intent.sprint) {
+                                entity.burstCooldown = 2.8;
+                                entity.vx += entity.intent.x * 110;
+                                entity.vy += entity.intent.y * 110;
+                            }
+                        }
+                        if (entity.kind === "runnerAI") {
+                            const enemies = world.entities.filter(
+                                (e) => e.team === "chasers",
+                            );
+                            let ax = 0,
+                                ay = 0;
+                            enemies.forEach((enemy) => {
+                                const d = Math.max(dist(entity, enemy), 1);
+                                ax += (entity.x - enemy.x) / d;
+                                ay += (entity.y - enemy.y) / d;
+                            });
+                            entity.intent.x = clamp(
+                                ax + rand(-0.15, 0.15),
+                                -1,
+                                1,
+                            );
+                            entity.intent.y = clamp(
+                                ay + rand(-0.15, 0.15),
+                                -1,
+                                1,
+                            );
+                            entity.intent.sprint =
+                                enemies.some(
+                                    (enemy) => dist(entity, enemy) < 170,
+                                ) && entity.burstCooldown <= 0;
+                            if (entity.intent.sprint) {
+                                entity.burstCooldown = 2.4;
+                                entity.vx += entity.intent.x * 160;
+                                entity.vy += entity.intent.y * 160;
+                            }
+                        }
+                        if (entity.kind === "trackerAI") {
+                            entity.battery = clamp(
+                                (entity.battery || 78) + dt * 6,
+                                0,
+                                100,
+                            );
+                            const d = dist(entity, target);
+                            const fearVec = target.reveal > 0 ? 1 : 0.4;
+                            entity.intent.x =
+                                clamp(
+                                    (target.x - entity.x) / Math.max(d, 1) +
+                                        rand(-0.22, 0.22),
+                                    -1,
+                                    1,
+                                ) * fearVec;
+                            entity.intent.y =
+                                clamp(
+                                    (target.y - entity.y) / Math.max(d, 1) +
+                                        rand(-0.22, 0.22),
+                                    -1,
+                                    1,
+                                ) * fearVec;
+                            entity.flashlightActive =
+                                d < 170 && entity.battery > 14;
+                            if (entity.flashlightActive)
+                                entity.battery = clamp(
+                                    entity.battery - dt * 16,
+                                    0,
+                                    100,
+                                );
+                        }
+                        if (entity.kind === "ghostAI") {
+                            const enemies = world.entities.filter(
+                                (e) => e.team === "trackers",
+                            );
+                            let ax = 0,
+                                ay = 0;
+                            enemies.forEach((enemy) => {
+                                const d = Math.max(dist(entity, enemy), 1);
+                                const weight = d < 220 ? 2.2 : 0.8;
+                                ax += ((entity.x - enemy.x) / d) * weight;
+                                ay += ((entity.y - enemy.y) / d) * weight;
+                            });
+                            entity.intent.x = clamp(
+                                ax + rand(-0.1, 0.1),
+                                -1,
+                                1,
+                            );
+                            entity.intent.y = clamp(
+                                ay + rand(-0.1, 0.1),
+                                -1,
+                                1,
+                            );
+                            entity.invisible = entity.reveal <= 0;
+                        }
+                    });
+                }
 
-  function createWorld(mode, role, durationMs) {
-    return {
-      mode, role, entities: [], nextId: 1, playerId: null, timeLeft: durationMs, running: false,
-      lastKnownThreat: null, result: null, tick: 0,
-      map: { width: 1280, height: 720, blockers: [] },
-      systems: [inputSystem, aiSystem, movementSystem, objectiveSystem, visibilitySystem, scoringSystem]
-    };
-  }
-  function baseEntity(data) {
-    return Object.assign({ vx:0, vy:0, alive:true, tagCooldown:0, intent:{x:0,y:0,sprint:false,ability:false,interact:false}, reveal:0, trail:[] }, data);
-  }
-  function addEntity(world, entity) { entity.id = world.nextId++; world.entities.push(entity); return entity.id; }
-  function getEntity(world, id) { return world.entities.find(e => e.id === id); }
-  function getPlayer(world) { return getEntity(world, world.playerId); }
-  function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
-  function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
-  function rand(min, max) { return min + Math.random() * (max - min); }
-  function showToast(msg) {
-    ui.toast.textContent = msg; ui.toast.classList.add('show'); toastTimer = 2.3;
-  }
-  function ensureAudio() {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-  }
-  function beep(freq = 520, duration = 0.08, type = 'sine', volume = 0.04) {
-    if (!audioCtx) return;
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = type; osc.frequency.value = freq;
-    gain.gain.setValueAtTime(volume, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-    osc.connect(gain).connect(audioCtx.destination);
-    osc.start(); osc.stop(audioCtx.currentTime + duration);
-  }
+                function collidesWithBlockers(world, x, y, radius) {
+                    return world.map.blockers.some(
+                        (b) =>
+                            x + radius > b.x &&
+                            x - radius < b.x + b.w &&
+                            y + radius > b.y &&
+                            y - radius < b.y + b.h,
+                    );
+                }
 
-  function spawnChaserAI(world, x, y, hostile = true) {
-    addEntity(world, baseEntity({ kind:'chaserAI', role:'chaser', team:'chasers', x, y, radius:13, color: hostile ? '#f5c451' : '#59a9ff', speed:157, energy:100, score:0, burstCooldown:0, hostile }));
-  }
-  function spawnTrackerAI(world, x, y, hostile = true) {
-    addEntity(world, baseEntity({ kind:'trackerAI', role:'tracker', team:'trackers', x, y, radius:14, color: hostile ? '#f5c451' : '#59a9ff', speed:154, energy:80, battery:78, flashlight:true, hostile }));
-  }
-  function spawnBeacon(world) {
-    addEntity(world, baseEntity({ kind:'beacon', x:rand(120, 1160), y:rand(110, 620), radius:9, color:'#f5c451', pulse: rand(0, TAU) }));
-  }
-  function spawnOrb(world) {
-    addEntity(world, baseEntity({ kind:'orb', x:rand(120, 1160), y:rand(100, 620), radius:8, color:'#f5c451', pulse: rand(0, TAU) }));
-  }
+                function movementSystem(world, dt) {
+                    world.entities.forEach((entity) => {
+                        if (!entity.alive || !entity.intent) return;
+                        const inputX = entity.intent.x || 0;
+                        const inputY = entity.intent.y || 0;
+                        const intentLen = Math.hypot(inputX, inputY) || 1;
+                        const dirX = inputX / intentLen;
+                        const dirY = inputY / intentLen;
+                        let speed = entity.speed || 0;
+                        if (
+                            entity.intent.sprint &&
+                            entity.energy > 0 &&
+                            entity.role !== "tracker"
+                        ) {
+                            speed *= 1.16;
+                            entity.energy = clamp(
+                                (entity.energy || 100) - dt * 20,
+                                0,
+                                100,
+                            );
+                        } else if (
+                            entity.role === "tracker" &&
+                            entity.flashlightActive
+                        ) {
+                            speed *= 0.86;
+                        } else {
+                            entity.energy = clamp(
+                                (entity.energy || 100) + dt * 14,
+                                0,
+                                100,
+                            );
+                        }
+                        if (entity.role === "tracker")
+                            entity.battery = clamp(
+                                (entity.battery || 80) +
+                                    (entity.flashlightActive
+                                        ? -dt * 20
+                                        : dt * 8),
+                                0,
+                                100,
+                            );
 
-  function setMode(modeId) {
-    activeMode = modeId;
-    const roles = roleCatalog[modeId];
-    if (!roles.some(r => r.id === activeRole)) activeRole = roles[0].id;
-    renderSelectors();
-  }
-  function setRole(roleId) { activeRole = roleId; renderSelectors(); }
-  function renderSelectors() {
-    ui.modeGrid.innerHTML = '';
-    Object.entries(modes).forEach(([id, mode]) => {
-      const btn = document.createElement('button');
-      btn.className = 'mode-card' + (id === activeMode ? ' active' : '');
-      btn.innerHTML = `<strong>${mode.name}</strong><small>${mode.description}</small>`;
-      btn.addEventListener('click', () => setMode(id));
-      ui.modeGrid.appendChild(btn);
-    });
-    ui.roleGrid.innerHTML = '';
-    roleCatalog[activeMode].forEach(role => {
-      const btn = document.createElement('button');
-      btn.className = 'role-card' + (role.id === activeRole ? ' active' : '');
-      btn.innerHTML = `<strong>${role.name}</strong><small>${role.summary}</small>`;
-      btn.addEventListener('click', () => setRole(role.id));
-      ui.roleGrid.appendChild(btn);
-    });
-  }
+                        entity.vx =
+                            (entity.vx || 0) * 0.84 + dirX * speed * 0.16;
+                        entity.vy =
+                            (entity.vy || 0) * 0.84 + dirY * speed * 0.16;
+                        let nextX = clamp(
+                            entity.x + entity.vx * dt * 60 * 0.016,
+                            entity.radius,
+                            world.map.width - entity.radius,
+                        );
+                        let nextY = clamp(
+                            entity.y + entity.vy * dt * 60 * 0.016,
+                            entity.radius,
+                            world.map.height - entity.radius,
+                        );
+                        if (
+                            !collidesWithBlockers(
+                                world,
+                                nextX,
+                                entity.y,
+                                entity.radius,
+                            )
+                        )
+                            entity.x = nextX;
+                        else entity.vx *= -0.2;
+                        if (
+                            !collidesWithBlockers(
+                                world,
+                                entity.x,
+                                nextY,
+                                entity.radius,
+                            )
+                        )
+                            entity.y = nextY;
+                        else entity.vy *= -0.2;
+                        entity.trail.push({ x: entity.x, y: entity.y, age: 0 });
+                        if (entity.trail.length > 30) entity.trail.shift();
+                        entity.trail.forEach((t) => (t.age += dt));
+                        entity.trail = entity.trail.filter((t) => t.age < 2.4);
+                        entity.reveal = Math.max(0, (entity.reveal || 0) - dt);
+                        if (
+                            entity.role === "ghost" ||
+                            entity.kind === "ghostAI"
+                        )
+                            entity.invisible = entity.reveal <= 0;
+                    });
+                }
 
-  function startGame() {
-    ensureAudio();
-    game = modes[activeMode].create(activeRole);
-    game.running = true;
-    ui.startOverlay.classList.add('hidden');
-    ui.resultOverlay.classList.add('hidden');
-    updateHUD();
-    showToast(`${modes[activeMode].name}: ${roleCatalog[activeMode].find(r => r.id === activeRole).name}`);
-    beep(480, 0.12, 'triangle', 0.05);
-  }
+                function objectiveSystem(world, dt) {
+                    world.timeLeft = Math.max(0, world.timeLeft - dt * 1000);
+                    const player = getPlayer(world);
+                    if (!player) return;
 
-  function endGame(success, reason) {
-    if (!game || game.result) return;
-    game.running = false;
-    game.result = { success, reason };
-    ui.resultTitle.textContent = success ? 'Objective complete' : 'Round lost';
-    ui.resultBody.textContent = reason;
-    ui.resultOverlay.classList.remove('hidden');
-    beep(success ? 760 : 160, success ? 0.2 : 0.3, success ? 'triangle' : 'sawtooth', 0.06);
-  }
+                    if (world.mode === "mario_chase") {
+                        const runner = world.entities.find(
+                            (e) => e.role === "runner" || e.kind === "runnerAI",
+                        );
+                        const chasers = world.entities.filter(
+                            (e) => e.team === "chasers",
+                        );
+                        world.entities
+                            .filter((e) => e.kind === "beacon")
+                            .forEach((beacon) => {
+                                if (
+                                    dist(runner, beacon) <
+                                    runner.radius + beacon.radius + 8
+                                ) {
+                                    runner.score += 20;
+                                    runner.energy = clamp(
+                                        (runner.energy || 100) + 20,
+                                        0,
+                                        100,
+                                    );
+                                    beep(820, 0.06, "triangle", 0.05);
+                                    beacon.x = rand(100, 1180);
+                                    beacon.y = rand(90, 640);
+                                    if (player.id === runner.id)
+                                        showToast(
+                                            "Beacon captured: score and energy boosted.",
+                                        );
+                                }
+                            });
+                        chasers.forEach((chaser) => {
+                            if (
+                                dist(chaser, runner) <
+                                    chaser.radius + runner.radius + 4 &&
+                                chaser.tagCooldown <= 0
+                            ) {
+                                endGame(
+                                    player.team === "chasers",
+                                    player.team === "chasers"
+                                        ? "Your pursuit team successfully tagged the runner."
+                                        : "The runner was tagged before the timer expired.",
+                                );
+                            }
+                        });
+                        if (world.timeLeft <= 0)
+                            endGame(
+                                player.team === "runner",
+                                player.team === "runner"
+                                    ? "You survived the full round and won as the runner."
+                                    : "The runner escaped until time expired.",
+                            );
+                    }
 
-  function inputSystem(world, dt) {
-    const player = getPlayer(world);
-    if (!player || !player.alive) return;
-    const moveX = (keys.has('KeyD') ? 1 : 0) - (keys.has('KeyA') ? 1 : 0);
-    const moveY = (keys.has('KeyS') ? 1 : 0) - (keys.has('KeyW') ? 1 : 0);
-    const len = Math.hypot(moveX, moveY) || 1;
-    player.intent.x = moveX / len; player.intent.y = moveY / len;
-    player.intent.sprint = keys.has('ShiftLeft') || keys.has('ShiftRight');
-    player.intent.ability = keys.has('Space');
-    player.intent.interact = keys.has('KeyE');
-    player.tagCooldown = Math.max(0, player.tagCooldown - dt);
-    player.burstCooldown = Math.max(0, player.burstCooldown - dt);
+                    if (world.mode === "ghost_mansion") {
+                        const ghost = world.entities.find(
+                            (e) => e.role === "ghost" || e.kind === "ghostAI",
+                        );
+                        const trackers = world.entities.filter(
+                            (e) => e.team === "trackers",
+                        );
+                        world.entities
+                            .filter((e) => e.kind === "orb")
+                            .forEach((orb) => {
+                                if (
+                                    dist(ghost, orb) <
+                                    ghost.radius + orb.radius + 8
+                                ) {
+                                    ghost.score += 18;
+                                    ghost.energy = clamp(
+                                        (ghost.energy || 100) + 12,
+                                        0,
+                                        100,
+                                    );
+                                    orb.x = rand(100, 1180);
+                                    orb.y = rand(90, 640);
+                                    beep(700, 0.05, "sine", 0.045);
+                                    if (player.id === ghost.id)
+                                        showToast("Haunted orb collected.");
+                                }
+                            });
+                        trackers.forEach((tracker) => {
+                            if (
+                                !tracker.flashlightActive ||
+                                tracker.battery <= 0
+                            )
+                                return;
+                            const dx = ghost.x - tracker.x,
+                                dy = ghost.y - tracker.y;
+                            const angle = Math.atan2(dy, dx);
+                            const facing = Math.atan2(
+                                tracker.intent?.y || 0.0001,
+                                tracker.intent?.x || 1,
+                            );
+                            const diff = Math.abs(
+                                Math.atan2(
+                                    Math.sin(angle - facing),
+                                    Math.cos(angle - facing),
+                                ),
+                            );
+                            const d = Math.hypot(dx, dy);
+                            if (
+                                d < 170 &&
+                                diff < 0.55 &&
+                                !lineBlocked(world, tracker, ghost)
+                            ) {
+                                ghost.reveal = 1.2;
+                                ghost.energy = clamp(
+                                    (ghost.energy || 100) - dt * 26,
+                                    0,
+                                    100,
+                                );
+                            }
+                            if (
+                                ghost.reveal > 0 &&
+                                d < tracker.radius + ghost.radius + 10 &&
+                                tracker.tagCooldown <= 0
+                            ) {
+                                endGame(
+                                    player.team === "trackers",
+                                    player.team === "trackers"
+                                        ? "The trackers pinned the ghost during a reveal window."
+                                        : "The ghost was captured while revealed.",
+                                );
+                            }
+                        });
+                        if (world.timeLeft <= 0)
+                            endGame(
+                                player.team === "ghost",
+                                player.team === "ghost"
+                                    ? "You remained uncaptured until the mansion timer expired."
+                                    : "The ghost survived the round.",
+                            );
+                        if (ghost.energy <= 0)
+                            endGame(
+                                player.team === "trackers",
+                                player.team === "trackers"
+                                    ? "Battery and reveal pressure exhausted the ghost."
+                                    : "The ghost was forced into a vulnerable collapse.",
+                            );
+                    }
+                }
 
-    if (world.mode === 'mario_chase' && player.role === 'runner' && player.intent.sprint && player.burstCooldown <= 0 && player.energy >= 22) {
-      player.energy -= 22; player.burstCooldown = 1.8; player.vx += player.intent.x * 200; player.vy += player.intent.y * 200; player.score += 8; showToast('Burst dash executed.'); beep(660, .08, 'square', .05);
-    }
-    if (world.mode === 'ghost_mansion' && player.role === 'ghost' && player.intent.sprint && player.burstCooldown <= 0 && player.energy >= 18) {
-      player.energy -= 18; player.burstCooldown = 2.3; player.vx += player.intent.x * 170; player.vy += player.intent.y * 170; showToast('Phase shift triggered.'); beep(620, .07, 'triangle', .05);
-    }
-    if (world.mode === 'ghost_mansion' && player.role === 'tracker') {
-      player.flashlightActive = player.intent.ability && player.battery > 0;
-    }
-  }
+                function lineBlocked(world, a, b) {
+                    return world.map.blockers.some((block) => {
+                        const steps = 18;
+                        for (let i = 0; i <= steps; i++) {
+                            const t = i / steps;
+                            const x = a.x + (b.x - a.x) * t;
+                            const y = a.y + (b.y - a.y) * t;
+                            if (
+                                x > block.x &&
+                                x < block.x + block.w &&
+                                y > block.y &&
+                                y < block.y + block.h
+                            )
+                                return true;
+                        }
+                        return false;
+                    });
+                }
 
-  function aiSystem(world, dt) {
-    const player = getPlayer(world);
-    const runner = world.entities.find(e => e.role === 'runner' || e.kind === 'runnerAI');
-    const ghost = world.entities.find(e => e.role === 'ghost' || e.kind === 'ghostAI');
-    world.entities.forEach(entity => {
-      if (entity.id === world.playerId || !entity.alive) return;
-      entity.tagCooldown = Math.max(0, entity.tagCooldown - dt);
-      entity.burstCooldown = Math.max(0, entity.burstCooldown - dt);
-      entity.intent = entity.intent || {x:0,y:0,sprint:false,ability:false,interact:false};
-      const target = world.mode === 'mario_chase' ? runner : ghost;
-      if (!target) return;
+                function visibilitySystem(world) {
+                    const player = getPlayer(world);
+                    if (!player) return;
+                    if (world.mode === "mario_chase") {
+                        const runner = world.entities.find(
+                            (e) => e.role === "runner" || e.kind === "runnerAI",
+                        );
+                        const chasers = world.entities.filter(
+                            (e) => e.team === "chasers",
+                        );
+                        if (player.team === "chasers" && runner) {
+                            const nearest = Math.min(
+                                ...chasers.map((c) =>
+                                    Math.round(dist(c, runner)),
+                                ),
+                            );
+                            world.lastKnownThreat = {
+                                text: `Runner distance: ${nearest}px`,
+                                exact: false,
+                            };
+                        } else if (runner) {
+                            world.lastKnownThreat = {
+                                text: `${chasers.length} chasers replicated on minimap`,
+                                exact: true,
+                            };
+                        }
+                    } else {
+                        const ghost = world.entities.find(
+                            (e) => e.role === "ghost" || e.kind === "ghostAI",
+                        );
+                        const trackers = world.entities.filter(
+                            (e) => e.team === "trackers",
+                        );
+                        if (player.team === "trackers" && ghost) {
+                            const nearest = Math.min(
+                                ...trackers.map((t) =>
+                                    Math.round(dist(t, ghost)),
+                                ),
+                            );
+                            const revealed =
+                                ghost.reveal > 0
+                                    ? "Ghost fully revealed."
+                                    : "Ghost hidden; only fear pulse is replicated.";
+                            world.lastKnownThreat = {
+                                text: `Nearest anomaly: ${nearest}px. ${revealed}`,
+                                exact: ghost.reveal > 0,
+                            };
+                        } else if (ghost) {
+                            world.lastKnownThreat = {
+                                text: `${trackers.filter((t) => t.flashlightActive).length} tracker beams active`,
+                                exact: true,
+                            };
+                        }
+                    }
+                }
 
-      if (entity.kind === 'chaserAI') {
-        const d = dist(entity, target);
-        const bias = d > 220 ? 1 : 0.6;
-        entity.intent.x = clamp((target.x - entity.x) / Math.max(d, 1) + rand(-0.18, 0.18), -1, 1) * bias;
-        entity.intent.y = clamp((target.y - entity.y) / Math.max(d, 1) + rand(-0.18, 0.18), -1, 1) * bias;
-        entity.intent.sprint = d > 240 && entity.burstCooldown <= 0 && Math.random() < 0.02;
-        if (entity.intent.sprint) { entity.burstCooldown = 2.8; entity.vx += entity.intent.x * 110; entity.vy += entity.intent.y * 110; }
-      }
-      if (entity.kind === 'runnerAI') {
-        const enemies = world.entities.filter(e => e.team === 'chasers');
-        let ax = 0, ay = 0;
-        enemies.forEach(enemy => {
-          const d = Math.max(dist(entity, enemy), 1);
-          ax += (entity.x - enemy.x) / d;
-          ay += (entity.y - enemy.y) / d;
-        });
-        entity.intent.x = clamp(ax + rand(-0.15,0.15), -1, 1);
-        entity.intent.y = clamp(ay + rand(-0.15,0.15), -1, 1);
-        entity.intent.sprint = enemies.some(enemy => dist(entity, enemy) < 170) && entity.burstCooldown <= 0;
-        if (entity.intent.sprint) { entity.burstCooldown = 2.4; entity.vx += entity.intent.x * 160; entity.vy += entity.intent.y * 160; }
-      }
-      if (entity.kind === 'trackerAI') {
-        entity.battery = clamp((entity.battery || 78) + dt * 6, 0, 100);
-        const d = dist(entity, target);
-        const fearVec = target.reveal > 0 ? 1 : 0.4;
-        entity.intent.x = clamp((target.x - entity.x) / Math.max(d,1) + rand(-0.22,0.22), -1, 1) * fearVec;
-        entity.intent.y = clamp((target.y - entity.y) / Math.max(d,1) + rand(-0.22,0.22), -1, 1) * fearVec;
-        entity.flashlightActive = d < 170 && entity.battery > 14;
-        if (entity.flashlightActive) entity.battery = clamp(entity.battery - dt * 16, 0, 100);
-      }
-      if (entity.kind === 'ghostAI') {
-        const enemies = world.entities.filter(e => e.team === 'trackers');
-        let ax = 0, ay = 0;
-        enemies.forEach(enemy => {
-          const d = Math.max(dist(entity, enemy), 1);
-          const weight = d < 220 ? 2.2 : 0.8;
-          ax += ((entity.x - enemy.x) / d) * weight;
-          ay += ((entity.y - enemy.y) / d) * weight;
-        });
-        entity.intent.x = clamp(ax + rand(-0.1,0.1), -1, 1);
-        entity.intent.y = clamp(ay + rand(-0.1,0.1), -1, 1);
-        entity.invisible = entity.reveal <= 0;
-      }
-    });
-  }
+                function scoringSystem(world) {
+                    const player = getPlayer(world);
+                    if (!player) return;
+                    ui.scoreMetric.textContent = Math.round(player.score || 0);
+                    if (
+                        world.mode === "ghost_mansion" &&
+                        player.role === "tracker"
+                    )
+                        ui.energyMetric.textContent = `${Math.round(player.battery || 0)}%`;
+                    else
+                        ui.energyMetric.textContent = Math.round(
+                            player.energy || 0,
+                        );
+                    ui.stateMetric.textContent = world.result
+                        ? world.result.success
+                            ? "Victory"
+                            : "Defeat"
+                        : world.running
+                          ? "Live"
+                          : "Ready";
+                }
 
-  function collidesWithBlockers(world, x, y, radius) {
-    return world.map.blockers.some(b => x + radius > b.x && x - radius < b.x + b.w && y + radius > b.y && y - radius < b.y + b.h);
-  }
+                function updateHUD() {
+                    if (!game) return;
+                    const player = getPlayer(game);
+                    ui.hudModeTitle.textContent = `${modes[game.mode].name} · ${roleCatalog[game.mode].find((r) => r.id === game.role).name}`;
+                    const totalSec = Math.ceil(game.timeLeft / 1000);
+                    const mm = String(Math.floor(totalSec / 60)).padStart(
+                        2,
+                        "0",
+                    );
+                    const ss = String(totalSec % 60).padStart(2, "0");
+                    ui.hudTimer.textContent = `${mm}:${ss}`;
+                    ui.objectives.innerHTML = modes[game.mode].objectives[
+                        game.role
+                    ]
+                        .map(
+                            (text, i) =>
+                                `<div class="objective-item ${i === 0 ? "active" : ""}">${text}</div>`,
+                        )
+                        .join("");
+                    const playerFacts = [];
+                    if (game.lastKnownThreat)
+                        playerFacts.push(game.lastKnownThreat.text);
+                    if (game.mode === "mario_chase") {
+                        playerFacts.push(
+                            game.role === "runner"
+                                ? "Server policy: exact chaser transforms allowed for your role."
+                                : "Server policy: runner transform withheld until direct reveal conditions are met.",
+                        );
+                        playerFacts.push(
+                            "Shared systems active: movement, objective, visibility, scoring, AI.",
+                        );
+                    } else {
+                        playerFacts.push(
+                            game.role === "ghost"
+                                ? "Replication hides your exact transform from trackers until reveal succeeds."
+                                : "Replication sends proxy cues until flashlight validation passes.",
+                        );
+                        playerFacts.push(
+                            "Battery drain and reveal windows are validated in the fixed-step simulation.",
+                        );
+                    }
+                    ui.knowledgeFeed.innerHTML = playerFacts
+                        .map((f) => `<div>${f}</div>`)
+                        .join("");
+                }
 
-  function movementSystem(world, dt) {
-    world.entities.forEach(entity => {
-      if (!entity.alive || !entity.intent) return;
-      const inputX = entity.intent.x || 0;
-      const inputY = entity.intent.y || 0;
-      const intentLen = Math.hypot(inputX, inputY) || 1;
-      const dirX = inputX / intentLen;
-      const dirY = inputY / intentLen;
-      let speed = entity.speed || 0;
-      if (entity.intent.sprint && entity.energy > 0 && entity.role !== 'tracker') { speed *= 1.16; entity.energy = clamp((entity.energy || 100) - dt * 20, 0, 100); }
-      else if (entity.role === 'tracker' && entity.flashlightActive) { speed *= 0.86; }
-      else { entity.energy = clamp((entity.energy || 100) + dt * 14, 0, 100); }
-      if (entity.role === 'tracker') entity.battery = clamp((entity.battery || 80) + (entity.flashlightActive ? -dt * 20 : dt * 8), 0, 100);
+                function drawWorld(world, alpha) {
+                    const w = canvas.width,
+                        h = canvas.height;
+                    ctx.clearRect(0, 0, w, h);
+                    const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
+                    bgGrad.addColorStop(0, "#0c1720");
+                    bgGrad.addColorStop(1, "#10161e");
+                    ctx.fillStyle = bgGrad;
+                    ctx.fillRect(0, 0, w, h);
 
-      entity.vx = (entity.vx || 0) * 0.84 + dirX * speed * 0.16;
-      entity.vy = (entity.vy || 0) * 0.84 + dirY * speed * 0.16;
-      let nextX = clamp(entity.x + entity.vx * dt * 60 * 0.016, entity.radius, world.map.width - entity.radius);
-      let nextY = clamp(entity.y + entity.vy * dt * 60 * 0.016, entity.radius, world.map.height - entity.radius);
-      if (!collidesWithBlockers(world, nextX, entity.y, entity.radius)) entity.x = nextX; else entity.vx *= -0.2;
-      if (!collidesWithBlockers(world, entity.x, nextY, entity.radius)) entity.y = nextY; else entity.vy *= -0.2;
-      entity.trail.push({x:entity.x, y:entity.y, age:0});
-      if (entity.trail.length > 30) entity.trail.shift();
-      entity.trail.forEach(t => t.age += dt);
-      entity.trail = entity.trail.filter(t => t.age < 2.4);
-      entity.reveal = Math.max(0, (entity.reveal || 0) - dt);
-      if (entity.role === 'ghost' || entity.kind === 'ghostAI') entity.invisible = entity.reveal <= 0;
-    });
-  }
+                    drawGrid(w, h);
+                    drawBlockers(world.map.blockers);
 
-  function objectiveSystem(world, dt) {
-    world.timeLeft = Math.max(0, world.timeLeft - dt * 1000);
-    const player = getPlayer(world);
-    if (!player) return;
+                    world.entities
+                        .filter((e) => e.kind === "beacon" || e.kind === "orb")
+                        .forEach((item) => drawPickup(item));
+                    world.entities
+                        .filter((e) => e.kind !== "beacon" && e.kind !== "orb")
+                        .forEach((entity) => drawEntity(world, entity));
+                    if (showMinimap) drawMinimap(world);
+                }
 
-    if (world.mode === 'mario_chase') {
-      const runner = world.entities.find(e => e.role === 'runner' || e.kind === 'runnerAI');
-      const chasers = world.entities.filter(e => e.team === 'chasers');
-      world.entities.filter(e => e.kind === 'beacon').forEach(beacon => {
-        if (dist(runner, beacon) < runner.radius + beacon.radius + 8) {
-          runner.score += 20; runner.energy = clamp((runner.energy || 100) + 20, 0, 100); beep(820, .06, 'triangle', .05);
-          beacon.x = rand(100, 1180); beacon.y = rand(90, 640);
-          if (player.id === runner.id) showToast('Beacon captured: score and energy boosted.');
-        }
-      });
-      chasers.forEach(chaser => {
-        if (dist(chaser, runner) < chaser.radius + runner.radius + 4 && chaser.tagCooldown <= 0) {
-          endGame(player.team === 'chasers', player.team === 'chasers' ? 'Your pursuit team successfully tagged the runner.' : 'The runner was tagged before the timer expired.');
-        }
-      });
-      if (world.timeLeft <= 0) endGame(player.team === 'runner', player.team === 'runner' ? 'You survived the full round and won as the runner.' : 'The runner escaped until time expired.');
-    }
+                function drawGrid(w, h) {
+                    ctx.save();
+                    ctx.strokeStyle = "rgba(255,255,255,.04)";
+                    ctx.lineWidth = 1;
+                    for (let x = 0; x < w; x += 40) {
+                        ctx.beginPath();
+                        ctx.moveTo(x, 0);
+                        ctx.lineTo(x, h);
+                        ctx.stroke();
+                    }
+                    for (let y = 0; y < h; y += 40) {
+                        ctx.beginPath();
+                        ctx.moveTo(0, y);
+                        ctx.lineTo(w, y);
+                        ctx.stroke();
+                    }
+                    ctx.restore();
+                }
+                function drawBlockers(blockers) {
+                    blockers.forEach((b) => {
+                        ctx.fillStyle = "rgba(125, 144, 164, 0.18)";
+                        ctx.strokeStyle = "rgba(173, 196, 212, 0.18)";
+                        ctx.lineWidth = 2;
+                        ctx.fillRect(b.x, b.y, b.w, b.h);
+                        ctx.strokeRect(b.x, b.y, b.w, b.h);
+                    });
+                }
+                function drawPickup(item) {
+                    item.pulse += 0.06;
+                    const r = item.radius + Math.sin(item.pulse) * 2;
+                    ctx.save();
+                    ctx.fillStyle = item.color;
+                    ctx.shadowColor = item.color;
+                    ctx.shadowBlur = 20;
+                    ctx.beginPath();
+                    ctx.arc(item.x, item.y, r, 0, TAU);
+                    ctx.fill();
+                    ctx.restore();
+                }
+                function drawEntity(world, entity) {
+                    const player = getPlayer(world);
+                    const isGhostHidden =
+                        world.mode === "ghost_mansion" &&
+                        (entity.role === "ghost" ||
+                            entity.kind === "ghostAI") &&
+                        entity.reveal <= 0;
+                    const isThreatHiddenForTracker =
+                        player &&
+                        player.team === "trackers" &&
+                        isGhostHidden &&
+                        entity.id !== player.id;
+                    const isRunnerHiddenForChaser =
+                        world.mode === "mario_chase" &&
+                        player &&
+                        player.team === "chasers" &&
+                        (entity.role === "runner" ||
+                            entity.kind === "runnerAI") &&
+                        entity.id !== player.id;
+                    const renderAsHint =
+                        isThreatHiddenForTracker || isRunnerHiddenForChaser;
 
-    if (world.mode === 'ghost_mansion') {
-      const ghost = world.entities.find(e => e.role === 'ghost' || e.kind === 'ghostAI');
-      const trackers = world.entities.filter(e => e.team === 'trackers');
-      world.entities.filter(e => e.kind === 'orb').forEach(orb => {
-        if (dist(ghost, orb) < ghost.radius + orb.radius + 8) {
-          ghost.score += 18; ghost.energy = clamp((ghost.energy || 100) + 12, 0, 100); orb.x = rand(100, 1180); orb.y = rand(90, 640); beep(700, .05, 'sine', .045);
-          if (player.id === ghost.id) showToast('Haunted orb collected.');
-        }
-      });
-      trackers.forEach(tracker => {
-        if (!tracker.flashlightActive || tracker.battery <= 0) return;
-        const dx = ghost.x - tracker.x, dy = ghost.y - tracker.y;
-        const angle = Math.atan2(dy, dx);
-        const facing = Math.atan2(tracker.intent?.y || 0.0001, tracker.intent?.x || 1);
-        const diff = Math.abs(Math.atan2(Math.sin(angle - facing), Math.cos(angle - facing)));
-        const d = Math.hypot(dx, dy);
-        if (d < 170 && diff < 0.55 && !lineBlocked(world, tracker, ghost)) {
-          ghost.reveal = 1.2; ghost.energy = clamp((ghost.energy || 100) - dt * 26, 0, 100);
-        }
-        if (ghost.reveal > 0 && d < tracker.radius + ghost.radius + 10 && tracker.tagCooldown <= 0) {
-          endGame(player.team === 'trackers', player.team === 'trackers' ? 'The trackers pinned the ghost during a reveal window.' : 'The ghost was captured while revealed.');
-        }
-      });
-      if (world.timeLeft <= 0) endGame(player.team === 'ghost', player.team === 'ghost' ? 'You remained uncaptured until the mansion timer expired.' : 'The ghost survived the round.');
-      if (ghost.energy <= 0) endGame(player.team === 'trackers', player.team === 'trackers' ? 'Battery and reveal pressure exhausted the ghost.' : 'The ghost was forced into a vulnerable collapse.');
-    }
-  }
+                    if (renderAsHint) {
+                        if (entity.trail?.length) {
+                            ctx.save();
+                            entity.trail.forEach((t, idx) => {
+                                ctx.fillStyle = `rgba(255, 107, 136, ${(1 - idx / entity.trail.length) * 0.18})`;
+                                ctx.beginPath();
+                                ctx.arc(t.x, t.y, 4, 0, TAU);
+                                ctx.fill();
+                            });
+                            ctx.restore();
+                        }
+                        return;
+                    }
 
-  function lineBlocked(world, a, b) {
-    return world.map.blockers.some(block => {
-      const steps = 18;
-      for (let i = 0; i <= steps; i++) {
-        const t = i / steps;
-        const x = a.x + (b.x - a.x) * t;
-        const y = a.y + (b.y - a.y) * t;
-        if (x > block.x && x < block.x + block.w && y > block.y && y < block.y + block.h) return true;
-      }
-      return false;
-    });
-  }
+                    if (entity.flashlightActive) drawFlashlightCone(entity);
+                    ctx.save();
+                    if (entity.id === world.playerId) {
+                        ctx.shadowColor = "#30d5c8";
+                        ctx.shadowBlur = 18;
+                        ctx.strokeStyle = "rgba(255,255,255,.85)";
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.arc(entity.x, entity.y, entity.radius + 5, 0, TAU);
+                        ctx.stroke();
+                    }
+                    if (
+                        entity.trail?.length &&
+                        entity.team !== getPlayer(world)?.team
+                    ) {
+                        entity.trail.forEach((t, idx) => {
+                            ctx.fillStyle = `rgba(255,255,255, ${(1 - idx / entity.trail.length) * 0.06})`;
+                            ctx.beginPath();
+                            ctx.arc(t.x, t.y, entity.radius * 0.3, 0, TAU);
+                            ctx.fill();
+                        });
+                    }
+                    ctx.fillStyle =
+                        entity.reveal > 0 ? "#ff6b88" : entity.color;
+                    ctx.beginPath();
+                    ctx.arc(entity.x, entity.y, entity.radius, 0, TAU);
+                    ctx.fill();
+                    ctx.restore();
+                }
+                function drawFlashlightCone(entity) {
+                    const angle = Math.atan2(
+                        entity.intent?.y || 0.0001,
+                        entity.intent?.x || 1,
+                    );
+                    ctx.save();
+                    ctx.fillStyle = "rgba(255, 241, 180, 0.11)";
+                    ctx.beginPath();
+                    ctx.moveTo(entity.x, entity.y);
+                    ctx.arc(
+                        entity.x,
+                        entity.y,
+                        170,
+                        angle - 0.55,
+                        angle + 0.55,
+                    );
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.restore();
+                }
+                function drawMinimap(world) {
+                    const x = canvas.width - 220,
+                        y = 24,
+                        width = 190,
+                        height = 126;
+                    ctx.save();
+                    ctx.fillStyle = "rgba(7,12,18,.74)";
+                    ctx.strokeStyle = "rgba(163,196,212,.24)";
+                    ctx.lineWidth = 1.5;
+                    roundRect(ctx, x, y, width, height, 14, true, true);
+                    const sx = width / world.map.width,
+                        sy = height / world.map.height;
+                    world.map.blockers.forEach((b) => {
+                        ctx.fillStyle = "rgba(173,196,212,.15)";
+                        ctx.fillRect(
+                            x + b.x * sx,
+                            y + b.y * sy,
+                            b.w * sx,
+                            b.h * sy,
+                        );
+                    });
+                    const player = getPlayer(world);
+                    world.entities.forEach((entity) => {
+                        if (entity.kind === "beacon" || entity.kind === "orb") {
+                            ctx.fillStyle = "#f5c451";
+                        } else {
+                            const hidden =
+                                (world.mode === "mario_chase" &&
+                                    player.team === "chasers" &&
+                                    (entity.role === "runner" ||
+                                        entity.kind === "runnerAI") &&
+                                    entity.id !== player.id) ||
+                                (world.mode === "ghost_mansion" &&
+                                    player.team === "trackers" &&
+                                    (entity.role === "ghost" ||
+                                        entity.kind === "ghostAI") &&
+                                    entity.reveal <= 0 &&
+                                    entity.id !== player.id);
+                            if (hidden) return;
+                            ctx.fillStyle =
+                                entity.id === world.playerId
+                                    ? "#30d5c8"
+                                    : entity.color;
+                        }
+                        ctx.beginPath();
+                        ctx.arc(
+                            x + entity.x * sx,
+                            y + entity.y * sy,
+                            Math.max(2.5, entity.radius * 0.24),
+                            0,
+                            TAU,
+                        );
+                        ctx.fill();
+                    });
+                    ctx.restore();
+                }
+                function roundRect(ctx, x, y, w, h, r, fill, stroke) {
+                    ctx.beginPath();
+                    ctx.moveTo(x + r, y);
+                    ctx.arcTo(x + w, y, x + w, y + h, r);
+                    ctx.arcTo(x + w, y + h, x, y + h, r);
+                    ctx.arcTo(x, y + h, x, y, r);
+                    ctx.arcTo(x, y, x + w, y, r);
+                    ctx.closePath();
+                    if (fill) ctx.fill();
+                    if (stroke) ctx.stroke();
+                }
 
-  function visibilitySystem(world) {
-    const player = getPlayer(world);
-    if (!player) return;
-    if (world.mode === 'mario_chase') {
-      const runner = world.entities.find(e => e.role === 'runner' || e.kind === 'runnerAI');
-      const chasers = world.entities.filter(e => e.team === 'chasers');
-      if (player.team === 'chasers' && runner) {
-        const nearest = Math.min(...chasers.map(c => Math.round(dist(c, runner))));
-        world.lastKnownThreat = { text: `Runner distance: ${nearest}px`, exact: false };
-      } else if (runner) {
-        world.lastKnownThreat = { text: `${chasers.length} chasers replicated on minimap`, exact: true };
-      }
-    } else {
-      const ghost = world.entities.find(e => e.role === 'ghost' || e.kind === 'ghostAI');
-      const trackers = world.entities.filter(e => e.team === 'trackers');
-      if (player.team === 'trackers' && ghost) {
-        const nearest = Math.min(...trackers.map(t => Math.round(dist(t, ghost))));
-        const revealed = ghost.reveal > 0 ? 'Ghost fully revealed.' : 'Ghost hidden; only fear pulse is replicated.';
-        world.lastKnownThreat = { text: `Nearest anomaly: ${nearest}px. ${revealed}`, exact: ghost.reveal > 0 };
-      } else if (ghost) {
-        world.lastKnownThreat = { text: `${trackers.filter(t => t.flashlightActive).length} tracker beams active`, exact: true };
-      }
-    }
-  }
+                let last = performance.now();
+                function frame(now) {
+                    const dt = Math.min(0.033, (now - last) / 1000);
+                    last = now;
+                    if (toastTimer > 0) {
+                        toastTimer -= dt;
+                        if (toastTimer <= 0) ui.toast.classList.remove("show");
+                    }
+                    if (game) {
+                        if (game.running) {
+                            game.tick++;
+                            game.systems.forEach((system) => system(game, dt));
+                            updateHUD();
+                        }
+                        drawWorld(game, 1);
+                    } else {
+                        drawIdle();
+                    }
+                    requestAnimationFrame(frame);
+                }
 
-  function scoringSystem(world) {
-    const player = getPlayer(world);
-    if (!player) return;
-    ui.scoreMetric.textContent = Math.round(player.score || 0);
-    if (world.mode === 'ghost_mansion' && player.role === 'tracker') ui.energyMetric.textContent = `${Math.round(player.battery || 0)}%`;
-    else ui.energyMetric.textContent = Math.round(player.energy || 0);
-    ui.stateMetric.textContent = world.result ? (world.result.success ? 'Victory' : 'Defeat') : (world.running ? 'Live' : 'Ready');
-  }
+                function drawIdle() {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    const grad = ctx.createLinearGradient(
+                        0,
+                        0,
+                        canvas.width,
+                        canvas.height,
+                    );
+                    grad.addColorStop(0, "#0b1620");
+                    grad.addColorStop(1, "#0a0f14");
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    drawGrid(canvas.width, canvas.height);
+                    ctx.fillStyle = "rgba(255,255,255,.08)";
+                    ctx.font = "700 34px Orbitron, sans-serif";
+                    ctx.fillText(
+                        "Select a mode and role, then start the round.",
+                        120,
+                        160,
+                    );
+                    ctx.font = "500 18px Inter, sans-serif";
+                    ctx.fillStyle = "rgba(237,244,250,.65)";
+                    ctx.fillText(
+                        "This prototype focuses on shared runtime architecture, asymmetric visibility, and data-driven role behavior.",
+                        120,
+                        200,
+                    );
+                }
 
-  function updateHUD() {
-    if (!game) return;
-    const player = getPlayer(game);
-    ui.hudModeTitle.textContent = `${modes[game.mode].name} · ${roleCatalog[game.mode].find(r => r.id === game.role).name}`;
-    const totalSec = Math.ceil(game.timeLeft / 1000);
-    const mm = String(Math.floor(totalSec / 60)).padStart(2, '0');
-    const ss = String(totalSec % 60).padStart(2, '0');
-    ui.hudTimer.textContent = `${mm}:${ss}`;
-    ui.objectives.innerHTML = modes[game.mode].objectives[game.role].map((text, i) => `<div class="objective-item ${i===0?'active':''}">${text}</div>`).join('');
-    const playerFacts = [];
-    if (game.lastKnownThreat) playerFacts.push(game.lastKnownThreat.text);
-    if (game.mode === 'mario_chase') {
-      playerFacts.push(game.role === 'runner' ? 'Server policy: exact chaser transforms allowed for your role.' : 'Server policy: runner transform withheld until direct reveal conditions are met.');
-      playerFacts.push('Shared systems active: movement, objective, visibility, scoring, AI.');
-    } else {
-      playerFacts.push(game.role === 'ghost' ? 'Replication hides your exact transform from trackers until reveal succeeds.' : 'Replication sends proxy cues until flashlight validation passes.');
-      playerFacts.push('Battery drain and reveal windows are validated in the fixed-step simulation.');
-    }
-    ui.knowledgeFeed.innerHTML = playerFacts.map(f => `<div>${f}</div>`).join('');
-  }
+                ui.startButton.addEventListener("click", startGame);
+                ui.cycleButton.addEventListener("click", () => {
+                    const keys = Object.keys(modes);
+                    const idx = keys.indexOf(activeMode);
+                    setMode(keys[(idx + 1) % keys.length]);
+                });
+                ui.playAgainButton.addEventListener("click", startGame);
 
-  function drawWorld(world, alpha) {
-    const w = canvas.width, h = canvas.height;
-    ctx.clearRect(0, 0, w, h);
-    const bgGrad = ctx.createLinearGradient(0,0,0,h);
-    bgGrad.addColorStop(0, '#0c1720'); bgGrad.addColorStop(1, '#10161e');
-    ctx.fillStyle = bgGrad; ctx.fillRect(0,0,w,h);
+                window.addEventListener("keydown", (e) => {
+                    keys.add(e.code);
+                    if (e.code === "KeyR") startGame();
+                    if (e.code === "KeyM") showMinimap = !showMinimap;
+                });
+                window.addEventListener("keyup", (e) => {
+                    keys.delete(e.code);
+                });
+                window.addEventListener("pointerdown", ensureAudio, {
+                    once: true,
+                });
 
-    drawGrid(w, h);
-    drawBlockers(world.map.blockers);
-
-    world.entities.filter(e => e.kind === 'beacon' || e.kind === 'orb').forEach(item => drawPickup(item));
-    world.entities.filter(e => e.kind !== 'beacon' && e.kind !== 'orb').forEach(entity => drawEntity(world, entity));
-    if (showMinimap) drawMinimap(world);
-  }
-
-  function drawGrid(w, h) {
-    ctx.save();
-    ctx.strokeStyle = 'rgba(255,255,255,.04)';
-    ctx.lineWidth = 1;
-    for (let x = 0; x < w; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
-    for (let y = 0; y < h; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
-    ctx.restore();
-  }
-  function drawBlockers(blockers) {
-    blockers.forEach(b => {
-      ctx.fillStyle = 'rgba(125, 144, 164, 0.18)';
-      ctx.strokeStyle = 'rgba(173, 196, 212, 0.18)';
-      ctx.lineWidth = 2;
-      ctx.fillRect(b.x, b.y, b.w, b.h);
-      ctx.strokeRect(b.x, b.y, b.w, b.h);
-    });
-  }
-  function drawPickup(item) {
-    item.pulse += 0.06;
-    const r = item.radius + Math.sin(item.pulse) * 2;
-    ctx.save();
-    ctx.fillStyle = item.color;
-    ctx.shadowColor = item.color; ctx.shadowBlur = 20;
-    ctx.beginPath(); ctx.arc(item.x, item.y, r, 0, TAU); ctx.fill();
-    ctx.restore();
-  }
-  function drawEntity(world, entity) {
-    const player = getPlayer(world);
-    const isGhostHidden = world.mode === 'ghost_mansion' && (entity.role === 'ghost' || entity.kind === 'ghostAI') && entity.reveal <= 0;
-    const isThreatHiddenForTracker = player && player.team === 'trackers' && isGhostHidden && entity.id !== player.id;
-    const isRunnerHiddenForChaser = world.mode === 'mario_chase' && player && player.team === 'chasers' && (entity.role === 'runner' || entity.kind === 'runnerAI') && entity.id !== player.id;
-    const renderAsHint = isThreatHiddenForTracker || isRunnerHiddenForChaser;
-
-    if (renderAsHint) {
-      if (entity.trail?.length) {
-        ctx.save();
-        entity.trail.forEach((t, idx) => {
-          ctx.fillStyle = `rgba(255, 107, 136, ${(1 - idx / entity.trail.length) * 0.18})`;
-          ctx.beginPath(); ctx.arc(t.x, t.y, 4, 0, TAU); ctx.fill();
-        });
-        ctx.restore();
-      }
-      return;
-    }
-
-    if (entity.flashlightActive) drawFlashlightCone(entity);
-    ctx.save();
-    if (entity.id === world.playerId) {
-      ctx.shadowColor = '#30d5c8'; ctx.shadowBlur = 18;
-      ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(entity.x, entity.y, entity.radius + 5, 0, TAU); ctx.stroke();
-    }
-    if (entity.trail?.length && entity.team !== getPlayer(world)?.team) {
-      entity.trail.forEach((t, idx) => {
-        ctx.fillStyle = `rgba(255,255,255, ${(1 - idx / entity.trail.length) * 0.06})`;
-        ctx.beginPath(); ctx.arc(t.x, t.y, entity.radius * 0.3, 0, TAU); ctx.fill();
-      });
-    }
-    ctx.fillStyle = entity.reveal > 0 ? '#ff6b88' : entity.color;
-    ctx.beginPath(); ctx.arc(entity.x, entity.y, entity.radius, 0, TAU); ctx.fill();
-    ctx.restore();
-  }
-  function drawFlashlightCone(entity) {
-    const angle = Math.atan2(entity.intent?.y || 0.0001, entity.intent?.x || 1);
-    ctx.save();
-    ctx.fillStyle = 'rgba(255, 241, 180, 0.11)';
-    ctx.beginPath();
-    ctx.moveTo(entity.x, entity.y);
-    ctx.arc(entity.x, entity.y, 170, angle - 0.55, angle + 0.55);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-  }
-  function drawMinimap(world) {
-    const x = canvas.width - 220, y = 24, width = 190, height = 126;
-    ctx.save();
-    ctx.fillStyle = 'rgba(7,12,18,.74)';
-    ctx.strokeStyle = 'rgba(163,196,212,.24)';
-    ctx.lineWidth = 1.5;
-    roundRect(ctx, x, y, width, height, 14, true, true);
-    const sx = width / world.map.width, sy = height / world.map.height;
-    world.map.blockers.forEach(b => { ctx.fillStyle = 'rgba(173,196,212,.15)'; ctx.fillRect(x + b.x * sx, y + b.y * sy, b.w * sx, b.h * sy); });
-    const player = getPlayer(world);
-    world.entities.forEach(entity => {
-      if (entity.kind === 'beacon' || entity.kind === 'orb') {
-        ctx.fillStyle = '#f5c451';
-      } else {
-        const hidden = (world.mode === 'mario_chase' && player.team === 'chasers' && (entity.role === 'runner' || entity.kind === 'runnerAI') && entity.id !== player.id)
-          || (world.mode === 'ghost_mansion' && player.team === 'trackers' && (entity.role === 'ghost' || entity.kind === 'ghostAI') && entity.reveal <= 0 && entity.id !== player.id);
-        if (hidden) return;
-        ctx.fillStyle = entity.id === world.playerId ? '#30d5c8' : entity.color;
-      }
-      ctx.beginPath();
-      ctx.arc(x + entity.x * sx, y + entity.y * sy, Math.max(2.5, entity.radius * 0.24), 0, TAU);
-      ctx.fill();
-    });
-    ctx.restore();
-  }
-  function roundRect(ctx, x, y, w, h, r, fill, stroke) {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.arcTo(x + w, y, x + w, y + h, r);
-    ctx.arcTo(x + w, y + h, x, y + h, r);
-    ctx.arcTo(x, y + h, x, y, r);
-    ctx.arcTo(x, y, x + w, y, r);
-    ctx.closePath();
-    if (fill) ctx.fill();
-    if (stroke) ctx.stroke();
-  }
-
-  let last = performance.now();
-  function frame(now) {
-    const dt = Math.min(0.033, (now - last) / 1000);
-    last = now;
-    if (toastTimer > 0) { toastTimer -= dt; if (toastTimer <= 0) ui.toast.classList.remove('show'); }
-    if (game) {
-      if (game.running) {
-        game.tick++;
-        game.systems.forEach(system => system(game, dt));
-        updateHUD();
-      }
-      drawWorld(game, 1);
-    } else {
-      drawIdle();
-    }
-    requestAnimationFrame(frame);
-  }
-
-  function drawIdle() {
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    const grad = ctx.createLinearGradient(0,0,canvas.width,canvas.height);
-    grad.addColorStop(0, '#0b1620'); grad.addColorStop(1, '#0a0f14');
-    ctx.fillStyle = grad; ctx.fillRect(0,0,canvas.width,canvas.height);
-    drawGrid(canvas.width, canvas.height);
-    ctx.fillStyle = 'rgba(255,255,255,.08)';
-    ctx.font = '700 34px Orbitron, sans-serif';
-    ctx.fillText('Select a mode and role, then start the round.', 120, 160);
-    ctx.font = '500 18px Inter, sans-serif';
-    ctx.fillStyle = 'rgba(237,244,250,.65)';
-    ctx.fillText('This prototype focuses on shared runtime architecture, asymmetric visibility, and data-driven role behavior.', 120, 200);
-  }
-
-  ui.startButton.addEventListener('click', startGame);
-  ui.cycleButton.addEventListener('click', () => {
-    const keys = Object.keys(modes); const idx = keys.indexOf(activeMode); setMode(keys[(idx + 1) % keys.length]);
-  });
-  ui.playAgainButton.addEventListener('click', startGame);
-
-  window.addEventListener('keydown', (e) => {
-    keys.add(e.code);
-    if (e.code === 'KeyR') startGame();
-    if (e.code === 'KeyM') showMinimap = !showMinimap;
-  });
-  window.addEventListener('keyup', (e) => { keys.delete(e.code); });
-  window.addEventListener('pointerdown', ensureAudio, { once: true });
-
-  renderSelectors();
-  requestAnimationFrame(frame);
-})();
-</script>
-</body>
+                renderSelectors();
+                requestAnimationFrame(frame);
+            })();
+        </script>
+    </body>
 </html>
