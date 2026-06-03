@@ -3,6 +3,7 @@ import { initInput, isKeyPressed, keys } from "./input.js";
 import { setupUI, updateHUD } from "./ui.js";
 import { render } from "./render.js";
 import { aiSystem } from "./ai.js";
+import { updateCamera } from "./camera.js";
 import {
   movementSystem,
   batterySystem,
@@ -31,6 +32,7 @@ function init() {
 
     // Simulation runs during LOBBY and MATCH
     if (state.currentPhase === Phases.LOBBY || state.currentPhase === Phases.MATCH) {
+      updateCamera(dt);
       if (state.running) {
         state.tick++;
 
