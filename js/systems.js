@@ -1,8 +1,8 @@
-import { isKeyPressed, getMovementInput } from './input.js';
-import { state } from './game-state.js';
+import { isKeyPressed, getMovementInput } from "./input.js";
+import { state } from "./game-state.js";
 
 export function movementSystem(world, dt) {
-  world.entities.forEach(entity => {
+  world.entities.forEach((entity) => {
     if (!entity.alive) return;
 
     let moveX = 0;
@@ -14,12 +14,12 @@ export function movementSystem(world, dt) {
       moveX = input.x;
       moveY = input.y;
       if (input.angle !== null) {
-          entity.facing = input.angle;
+        entity.facing = input.angle;
       }
-      isSprinting = isKeyPressed('ShiftLeft') || isKeyPressed('ShiftRight');
+      isSprinting = isKeyPressed("ShiftLeft") || isKeyPressed("ShiftRight");
 
-      if (state.mode === 'ghost_mansion' && entity.role === 'tracker') {
-          entity.flashlightActive = isKeyPressed('Space') && entity.battery > 0;
+      if (state.mode === "ghost_mansion" && entity.role === "tracker") {
+        entity.flashlightActive = isKeyPressed("Space") && entity.battery > 0;
       }
     } else if (entity.ai) {
       moveX = entity.intent?.x || 0;
@@ -30,17 +30,17 @@ export function movementSystem(world, dt) {
     let speed = entity.speed || 150;
 
     // Mario Chase speed tuning
-    if (state.mode === 'mario_chase') {
-      if (entity.role === 'chaser') {
+    if (state.mode === "mario_chase") {
+      if (entity.role === "chaser") {
         // Mario chasers should be slightly slower than mario
         speed = 158; // Mario is 172
-      } else if (entity.role === 'mario') {
+      } else if (entity.role === "mario") {
         speed = 172;
       }
     }
 
     // Ghost Hunter battery and disable logic
-    if (state.mode === 'ghost_mansion' && entity.role === 'tracker') {
+    if (state.mode === "ghost_mansion" && entity.role === "tracker") {
       if (entity.battery <= 0) {
         speed *= 0.5; // disabled/slowed when out of battery
       }
@@ -75,21 +75,30 @@ export function movementSystem(world, dt) {
     }
 
     // Keep in bounds
-    entity.x = Math.max(entity.radius, Math.min(world.map.width - entity.radius, entity.x));
-    entity.y = Math.max(entity.radius, Math.min(world.map.height - entity.radius, entity.y));
+    entity.x = Math.max(
+      entity.radius,
+      Math.min(world.map.width - entity.radius, entity.x),
+    );
+    entity.y = Math.max(
+      entity.radius,
+      Math.min(world.map.height - entity.radius, entity.y),
+    );
   });
 }
 
 function checkCollision(world, x, y, radius) {
-  return world.map.blockers.some(b =>
-    x + radius > b.x && x - radius < b.x + b.w &&
-    y + radius > b.y && y - radius < b.y + b.h
+  return world.map.blockers.some(
+    (b) =>
+      x + radius > b.x &&
+      x - radius < b.x + b.w &&
+      y + radius > b.y &&
+      y - radius < b.y + b.h,
   );
 }
 
 export function batterySystem(world, dt) {
-  world.entities.forEach(entity => {
-    if (state.mode === 'ghost_mansion' && entity.role === 'tracker') {
+  world.entities.forEach((entity) => {
+    if (state.mode === "ghost_mansion" && entity.role === "tracker") {
       if (entity.superBatteryTimer > 0) {
         entity.superBatteryTimer -= dt;
       }
@@ -100,10 +109,10 @@ export function batterySystem(world, dt) {
           entity.battery = Math.max(0, entity.battery - dt * 15);
         }
       } else {
-          // Slow recharge if not active? Actually the prompt says:
-          // "ghost hunter battery should be able to drain and become disabled when battery runs out"
-          // "normal battery refills your flashlight power completely"
-          // Usually they don't recharge on their own in the original game.
+        // Slow recharge if not active? Actually the prompt says:
+        // "ghost hunter battery should be able to drain and become disabled when battery runs out"
+        // "normal battery refills your flashlight power completely"
+        // Usually they don't recharge on their own in the original game.
       }
 
       if (entity.battery <= 0) {
@@ -114,11 +123,11 @@ export function batterySystem(world, dt) {
 }
 
 export function visibilitySystem(world, dt) {
-  const ghost = world.entities.find(e => e.role === 'ghost');
+  const ghost = world.entities.find((e) => e.role === "ghost");
   if (!ghost) return;
 
-  world.entities.forEach(entity => {
-    if (state.mode === 'ghost_mansion' && entity.role === 'tracker') {
+  world.entities.forEach((entity) => {
+    if (state.mode === "ghost_mansion" && entity.role === "tracker") {
       const d = dist(entity, ghost);
 
       // Danger indicator: severe as they are closer
@@ -148,17 +157,17 @@ export function visibilitySystem(world, dt) {
     }
 
     if (ghost.revealTimer > 0) {
-        ghost.revealTimer -= dt;
+      ghost.revealTimer -= dt;
     }
   });
 }
 
 export function interactionSystem(world, dt) {
-  const ghost = world.entities.find(e => e.role === 'ghost');
-  const trackers = world.entities.filter(e => e.role === 'tracker');
+  const ghost = world.entities.find((e) => e.role === "ghost");
+  const trackers = world.entities.filter((e) => e.role === "tracker");
 
-  if (state.mode === 'ghost_mansion' && ghost) {
-    trackers.forEach(tracker => {
+  if (state.mode === "ghost_mansion" && ghost) {
+    trackers.forEach((tracker) => {
       if (!tracker.fainted) {
         const d = dist(tracker, ghost);
         // When the ghost touches a hunter, they will faint
@@ -169,7 +178,7 @@ export function interactionSystem(world, dt) {
       } else {
         // Can be revived if another hunter shines a light on them for 15 seconds
         let beingRevived = false;
-        trackers.forEach(other => {
+        trackers.forEach((other) => {
           if (other !== tracker && other.flashlightActive && !other.fainted) {
             const dx = tracker.x - other.x;
             const dy = tracker.y - other.y;
@@ -197,21 +206,26 @@ export function interactionSystem(world, dt) {
   }
 
   // Power-ups
-  world.entities.filter(e => e.type === 'powerup').forEach(pu => {
-    trackers.forEach(tracker => {
-        if (!tracker.fainted && dist(tracker, pu) < tracker.radius + pu.radius) {
-            if (pu.kind === 'battery') {
-                tracker.battery = 100;
-            } else if (pu.kind === 'super_battery') {
-                tracker.battery = 100;
-                tracker.superBatteryTimer = 10;
-            }
-            pu.alive = false;
+  world.entities
+    .filter((e) => e.type === "powerup")
+    .forEach((pu) => {
+      trackers.forEach((tracker) => {
+        if (
+          !tracker.fainted &&
+          dist(tracker, pu) < tracker.radius + pu.radius
+        ) {
+          if (pu.kind === "battery") {
+            tracker.battery = 100;
+          } else if (pu.kind === "super_battery") {
+            tracker.battery = 100;
+            tracker.superBatteryTimer = 10;
+          }
+          pu.alive = false;
         }
+      });
     });
-  });
 
-  world.entities = world.entities.filter(e => e.alive !== false);
+  world.entities = world.entities.filter((e) => e.alive !== false);
 }
 
 function dist(a, b) {
@@ -229,54 +243,73 @@ export function objectiveSystem(world, dt) {
 
   state.timeLeft = Math.max(0, state.timeLeft - dt * 1000);
 
-  if (state.mode === 'mario_chase') {
-    const mario = world.entities.find(e => e.role === 'mario');
-    const chasers = world.entities.filter(e => e.role === 'chaser');
+  if (state.mode === "mario_chase") {
+    const mario = world.entities.find((e) => e.role === "mario");
+    const chasers = world.entities.filter((e) => e.role === "chaser");
 
     if (mario) {
-      chasers.forEach(chaser => {
+      chasers.forEach((chaser) => {
         if (dist(mario, chaser) < mario.radius + chaser.radius) {
           state.running = false;
-          state.result = { success: state.role === 'chaser', reason: 'Mario was caught!' };
+          state.result = {
+            success: state.role === "chaser",
+            reason: "Mario was caught!",
+          };
         }
       });
     }
 
     if (state.timeLeft <= 0) {
       state.running = false;
-      state.result = { success: state.role === 'mario', reason: 'Mario escaped!' };
+      state.result = {
+        success: state.role === "mario",
+        reason: "Mario escaped!",
+      };
     }
-  } else if (state.mode === 'ghost_mansion') {
-    const ghost = world.entities.find(e => e.role === 'ghost');
-    const trackers = world.entities.filter(e => e.role === 'tracker');
+  } else if (state.mode === "ghost_mansion") {
+    const ghost = world.entities.find((e) => e.role === "ghost");
+    const trackers = world.entities.filter((e) => e.role === "tracker");
 
     if (ghost && ghost.energy <= 0) {
       state.running = false;
-      state.result = { success: state.role === 'tracker', reason: 'Ghost was defeated!' };
+      state.result = {
+        success: state.role === "tracker",
+        reason: "Ghost was defeated!",
+      };
     }
 
-    if (trackers.length > 0 && trackers.every(t => t.fainted)) {
+    if (trackers.length > 0 && trackers.every((t) => t.fainted)) {
       state.running = false;
-      state.result = { success: state.role === 'ghost', reason: 'All hunters fainted!' };
+      state.result = {
+        success: state.role === "ghost",
+        reason: "All hunters fainted!",
+      };
     }
 
     if (state.timeLeft <= 0) {
       state.running = false;
-      state.result = { success: state.role === 'ghost', reason: 'Time expired!' };
+      state.result = {
+        success: state.role === "ghost",
+        reason: "Time expired!",
+      };
     }
   }
 }
 
 export function scoringSystem(world) {
   // Simple scoring for now
-  const player = world.entities.find(e => e.id === state.playerId);
+  const player = world.entities.find((e) => e.id === state.playerId);
   if (player) {
-    if (state.mode === 'mario_chase') {
+    if (state.mode === "mario_chase") {
       player.score = Math.floor((20000 - state.timeLeft) / 100);
     } else {
-      player.score = player.role === 'ghost' ?
-        Math.floor((18000 - state.timeLeft) / 100) :
-        Math.floor((100 - (world.entities.find(e => e.role === 'ghost')?.energy || 0)));
+      player.score =
+        player.role === "ghost"
+          ? Math.floor((18000 - state.timeLeft) / 100)
+          : Math.floor(
+              100 -
+                (world.entities.find((e) => e.role === "ghost")?.energy || 0),
+            );
     }
   }
 }

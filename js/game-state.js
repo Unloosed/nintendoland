@@ -1,8 +1,8 @@
 export const state = {
   initialized: false,
   running: false,
-  mode: 'mario_chase',
-  role: 'mario',
+  mode: "mario_chase",
+  role: "mario",
   timeLeft: 0,
   result: null,
   tick: 0,
@@ -13,14 +13,14 @@ export const state = {
     map: {
       width: 1280,
       height: 720,
-      blockers: []
-    }
+      blockers: [],
+    },
   },
   ui: {
     showMinimap: true,
     toastTimer: 0,
-    lastKnownThreat: null
-  }
+    lastKnownThreat: null,
+  },
 };
 
 export function createEntity(data) {
@@ -31,10 +31,10 @@ export function createEntity(data) {
     vx: 0,
     vy: 0,
     radius: 10,
-    color: '#ffffff',
+    color: "#ffffff",
     alive: true,
     components: {},
-    ...data
+    ...data,
   };
   state.world.entities.push(entity);
   return entity;
