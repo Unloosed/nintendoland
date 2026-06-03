@@ -5,6 +5,20 @@ export function movementSystem(world, dt) {
   world.entities.forEach((entity) => {
     if (!entity.alive) return;
 
+    // Track input history for prediction/reconciliation (Client only)
+    if (entity.id === state.playerId) {
+        if (!entity.inputHistory) entity.inputHistory = [];
+        const actions = getActions();
+        entity.inputHistory.push({
+            tick: state.tick,
+            actions: { ...actions },
+            startPos: { x: entity.x, y: entity.y },
+            startVel: { vx: entity.vx, vy: entity.vy }
+        });
+        // Limit history size
+        if (entity.inputHistory.length > 100) entity.inputHistory.shift();
+    }
+
     let moveX = 0;
     let moveY = 0;
     let isSprinting = false;
@@ -271,61 +285,66 @@ function dist(a, b) {
 }
 
 export function objectiveSystem(world, dt) {
-  if (!state.running) return;
+  if (!state.running || !world.objectives) return;
 
   state.timeLeft = Math.max(0, state.timeLeft - dt * 1000);
 
-  if (state.mode === "mario_chase") {
-    const mario = world.entities.find((e) => e.role === "mario");
-    const chasers = world.entities.filter((e) => e.role === "chaser");
+  const currentObj = world.objectives[world.currentObjectiveIndex];
+  if (!currentObj) return;
 
-    if (mario) {
-      chasers.forEach((chaser) => {
-        if (dist(mario, chaser) < mario.radius + chaser.radius) {
-          state.running = false;
-          state.result = {
-            success: state.role === "chaser",
-            reason: "Mario was caught!",
-          };
-        }
-      });
-    }
-
-    if (state.timeLeft <= 0) {
-      state.running = false;
-      state.result = {
-        success: state.role === "mario",
-        reason: "Mario escaped!",
-      };
-    }
-  } else if (state.mode === "ghost_mansion") {
-    const ghost = world.entities.find((e) => e.role === "ghost");
-    const trackers = world.entities.filter((e) => e.role === "tracker");
-
-    if (ghost && ghost.energy <= 0) {
-      state.running = false;
-      state.result = {
-        success: state.role === "tracker",
-        reason: "Ghost was defeated!",
-      };
-    }
-
-    if (trackers.length > 0 && trackers.every((t) => t.fainted)) {
-      state.running = false;
-      state.result = {
-        success: state.role === "ghost",
-        reason: "All hunters fainted!",
-      };
-    }
-
-    if (state.timeLeft <= 0) {
-      state.running = false;
-      state.result = {
-        success: state.role === "ghost",
-        reason: "Time expired!",
-      };
-    }
+  if (currentObj.type === "composite") {
+    currentObj.subObjectives.forEach(sub => {
+      checkObjective(sub, world);
+    });
+  } else {
+    checkObjective(currentObj, world);
   }
+}
+
+function checkObjective(obj, world) {
+  if (!state.running) return;
+
+  switch (obj.type) {
+    case "timer_expire":
+      if (state.timeLeft <= 0) {
+        finishMatch(obj.winRole, obj.reason);
+      }
+      break;
+
+    case "proximity_tag":
+      const target = world.entities.find(e => e.role === obj.targetRole);
+      const chasers = world.entities.filter(e => e.role === obj.chaserRole);
+      if (target) {
+        chasers.forEach(chaser => {
+          if (dist(target, chaser) < target.radius + chaser.radius) {
+            finishMatch(obj.winRole, obj.reason);
+          }
+        });
+      }
+      break;
+
+    case "entity_stat_zero":
+      const ent = world.entities.find(e => e.role === obj.role);
+      if (ent && (ent[obj.stat] || 0) <= 0) {
+        finishMatch(obj.winRole, obj.reason);
+      }
+      break;
+
+    case "all_fainted":
+      const entities = world.entities.filter(e => e.role === obj.role);
+      if (entities.length > 0 && entities.every(e => e.fainted)) {
+        finishMatch(obj.winRole, obj.reason);
+      }
+      break;
+  }
+}
+
+function finishMatch(winRole, reason) {
+  state.running = false;
+  state.result = {
+    success: state.role === winRole,
+    reason: reason
+  };
 }
 
 export function scoringSystem(world) {

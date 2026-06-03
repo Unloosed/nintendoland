@@ -56,17 +56,54 @@ export function initLobby() {
   state.running = true;
 }
 
+export const AttractionPacks = {
+  mario_chase: {
+    objectives: [
+      {
+        id: "chase",
+        type: "composite",
+        subObjectives: [
+          { type: "timer_expire", duration: 20000, winRole: "mario", reason: "Mario escaped!" },
+          { type: "proximity_tag", targetRole: "mario", chaserRole: "chaser", winRole: "chaser", reason: "Mario was caught!" }
+        ]
+      }
+    ]
+  },
+  ghost_mansion: {
+    objectives: [
+      {
+        id: "haunt",
+        type: "composite",
+        subObjectives: [
+          { type: "timer_expire", duration: 18000, winRole: "ghost", reason: "Time expired!" },
+          { type: "entity_stat_zero", role: "ghost", stat: "energy", winRole: "tracker", reason: "Ghost was defeated!" },
+          { type: "all_fainted", role: "tracker", winRole: "ghost", reason: "All hunters fainted!" }
+        ]
+      }
+    ]
+  }
+};
+
 export function initApp() {
   setPhase(Phases.MATCH);
   const availableLevels = levels[state.mode];
   const level = availableLevels[Math.floor(Math.random() * availableLevels.length)];
   state.world.map.blockers = level.blockers;
 
+  // Load attraction pack data
+  const pack = AttractionPacks[state.mode];
+  state.world.objectives = JSON.parse(JSON.stringify(pack.objectives));
+  state.world.currentObjectiveIndex = 0;
+
   if (state.mode === "mario_chase") {
     initMarioChase();
   } else if (state.mode === "ghost_mansion") {
     initGhostMansion();
   }
+
+  import("./network.js").then(m => {
+      m.Server.init(state.world.entities);
+  });
 
   state.running = true;
   state.initialized = true;

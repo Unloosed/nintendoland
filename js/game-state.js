@@ -4,6 +4,7 @@ export const Phases = {
   LOBBY: "LOBBY",
   MATCH: "MATCH",
   RESULTS: "RESULTS",
+  REPLAY: "REPLAY",
 };
 
 export const state = {
@@ -21,6 +22,11 @@ export const state = {
     [Phases.LOBBY]: createWorld(),
     [Phases.MATCH]: createWorld(),
     [Phases.RESULTS]: createWorld(),
+  },
+  replay: {
+    recording: [],
+    isPlaying: false,
+    currentFrame: 0,
   },
   ui: {
     showMinimap: true,
