@@ -1,5 +1,13 @@
 import { state, setPhase, Phases } from "./game-state.js";
 import { filterWorldForRole } from "./visibility.js";
+import { applyMovement } from "./physics.js";
+import { aiSystem } from "./ai.js";
+import {
+    batterySystem,
+    visibilitySystem,
+    interactionSystem,
+    objectiveSystem,
+} from "./systems.js";
 
 /**
  * Simulated authoritative server.
@@ -7,76 +15,94 @@ import { filterWorldForRole } from "./visibility.js";
  */
 export const Server = {
   tickRate: 30,
-  history: [], // For lag compensation if needed
+  history: [], // For lag compensation: [ { tick, entities, timeLeft, result } ]
   lastProcessedTick: {},
-  entities: [], // Authoritative server state
+  world: null, // Authoritative server world state
 
-  init(initialEntities) {
-      this.entities = JSON.parse(JSON.stringify(initialEntities));
+  init(initialWorld) {
+      // Clone the initial world state
+      this.world = JSON.parse(JSON.stringify(initialWorld));
       this.lastProcessedTick = {};
+      this.history = [];
   },
 
   /**
-   * Authoritative simulation of an input command.
+   * Authoritative simulation of an input command and AI.
    */
-  processInput(playerId, command) {
-    const dt = 1 / this.tickRate;
-    const playerEntity = this.entities.find(e => e.id === playerId);
-    if (!playerEntity || !playerEntity.alive) return;
+  update(playerId, command, dt) {
+    if (!this.world || !state.running) return;
 
-    // Validate tick order
-    const lastTick = this.lastProcessedTick[playerId] || 0;
-    if (command.tick <= lastTick) return;
-    this.lastProcessedTick[playerId] = command.tick;
+    // 1. Process player input
+    if (command) {
+        const playerEntity = this.world.entities.find(e => e.id === playerId);
+        if (playerEntity && playerEntity.alive) {
+            // Validate tick order
+            const lastTick = this.lastProcessedTick[playerId] || 0;
+            if (command.tick > lastTick) {
+                this.lastProcessedTick[playerId] = command.tick;
 
-    // 1. Validate Input (clamping move vector)
-    const moveX = Math.max(-1, Math.min(1, command.moveX));
-    const moveY = Math.max(-1, Math.min(1, command.moveY));
-    const isSprinting = !!command.sprint;
+                // Validate Input (clamping move vector)
+                const moveX = Math.max(-1, Math.min(1, command.moveX || 0));
+                const moveY = Math.max(-1, Math.min(1, command.moveY || 0));
+                const isSprinting = !!command.sprint;
 
-    // 2. Authoritative Movement Physics
-    // We reuse the logic from systems but ensure it's strictly governed by server state
-    this.simulateMovement(playerEntity, moveX, moveY, isSprinting, dt, command);
-  },
+                applyMovement(playerEntity, this.world, moveX, moveY, isSprinting, dt);
 
-  simulateMovement(entity, moveX, moveY, isSprinting, dt, command) {
-    // We'll perform a simplified version of the movement system here
-    // In a real project, this would be a shared pure function
-    const config = this.getMovementConfig(entity);
-    const targetVx = moveX * config.maxSpeed * (isSprinting ? 1.3 : 1.0);
-    const targetVy = moveY * config.maxSpeed * (isSprinting ? 1.3 : 1.0);
-    const accel = (moveX !== 0 || moveY !== 0) ? config.acceleration : config.friction;
+                // Abilities (Authoritative cooldowns)
+                if (command.primary) {
+                    this.handlePrimaryAbility(playerEntity, dt);
+                }
 
-    entity.vx += (targetVx - entity.vx) * accel * dt;
-    entity.vy += (targetVy - entity.vy) * accel * dt;
-
-    const nextX = entity.x + entity.vx * dt;
-    const nextY = entity.y + entity.vy * dt;
-
-    // Collision check (Authoritative)
-    if (!this.checkCollision(nextX, entity.y, entity.radius)) entity.x = nextX;
-    if (!this.checkCollision(entity.x, nextY, entity.radius)) entity.y = nextY;
-
-    // Abilities (Authoritative cooldowns)
-    if (command.primary) {
-        this.handlePrimaryAbility(entity, dt);
+                // Track for lag compensation
+                playerEntity.lastTick = command.tick;
+            }
+        }
     }
-  },
 
-  getMovementConfig(entity) {
-    // Shared constants from systems.js logic
-    if (state.mode === "mario_chase") {
-        return entity.role === "mario"
-            ? { maxSpeed: 172, acceleration: 12, friction: 10 }
-            : { maxSpeed: 158, acceleration: 10, friction: 10 };
-    }
-    return { maxSpeed: 150, acceleration: 8, friction: 10 };
-  },
+    // 2. Run AI for NPCs
+    aiSystem(this.world, dt);
 
-  checkCollision(x, y, radius) {
-    return state.world.map.blockers.some(
-      (b) => x + radius > b.x && x - radius < b.x + b.w && y + radius > b.y && y - radius < b.y + b.h
-    );
+    // 3. Move NPCs and process cooldowns
+    this.world.entities.forEach(entity => {
+        if (entity.id !== playerId && entity.alive && entity.ai) {
+            const moveX = entity.intent?.x || 0;
+            const moveY = entity.intent?.y || 0;
+            const isSprinting = entity.intent?.sprint || false;
+            applyMovement(entity, this.world, moveX, moveY, isSprinting, dt);
+        }
+
+        if (entity.burstTimer > 0) entity.burstTimer -= dt;
+        if (entity.burstCooldown > 0) entity.burstCooldown -= dt;
+    });
+
+    // 4. Run Gameplay Systems (Authoritative)
+    batterySystem(this.world, dt);
+    visibilitySystem(this.world, dt);
+    interactionSystem(this.world, dt);
+
+    // Pass history to world for lag compensation systems
+    this.world.history = this.history;
+
+    // Pass fake 'state' to objective system to update authoritative result
+    const mockState = {
+        running: true,
+        timeLeft: state.timeLeft,
+        result: null,
+        role: "server" // Server doesn't care about personal win/loss yet
+    };
+    // Note: objectiveSystem in systems.js uses 'state' globally.
+    // For a true sim we should refactor systems to take a state object,
+    // but for this prototype we'll let it use the global 'state' but sync result back.
+    objectiveSystem(this.world, dt);
+
+    // 5. Update history for lag compensation
+    this.history.push({
+        tick: state.tick,
+        entities: JSON.parse(JSON.stringify(this.world.entities)),
+        timeLeft: state.timeLeft,
+        result: state.result
+    });
+    if (this.history.length > 60) this.history.shift();
   },
 
   handlePrimaryAbility(entity, dt) {
@@ -89,20 +115,49 @@ export const Server = {
   },
 
   generateSnapshot(observerId) {
-    // In a real server, we would filter based on observerId visibility rules
+    if (!this.world) return null;
+    const observer = this.world.entities.find(e => e.id === observerId);
+
     return {
       tick: state.tick,
-      entities: this.entities.map(e => ({
-          id: e.id,
-          x: e.x,
-          y: e.y,
-          vx: e.vx,
-          vy: e.vy,
-          role: e.role,
-          energy: e.energy,
-          battery: e.battery,
-          fainted: e.fainted
-      })),
+      entities: this.world.entities.map(e => {
+          const snapshot = {
+              id: e.id,
+              role: e.role,
+              energy: e.energy,
+              battery: e.battery,
+              fainted: e.fainted,
+              alive: e.alive,
+              color: e.color
+          };
+
+          // Role-based visibility filtering (Server-side suppression)
+          let visible = true;
+          if (observer) {
+              if (state.mode === "mario_chase") {
+                  if (observer.role === "chaser" && e.role === "mario") {
+                      const d = Math.hypot(observer.x - e.x, observer.y - e.y);
+                      if (!e.revealTimer && d > 300) visible = false;
+                  }
+              } else if (state.mode === "ghost_mansion") {
+                  if (observer.role === "tracker" && e.role === "ghost") {
+                      if (!e.revealTimer) visible = false;
+                  }
+              }
+          }
+
+          if (visible || e.id === observerId) {
+              snapshot.x = e.x;
+              snapshot.y = e.y;
+              snapshot.vx = e.vx;
+              snapshot.vy = e.vy;
+              snapshot.facing = e.facing;
+          } else {
+              snapshot.hidden = true;
+          }
+
+          return snapshot;
+      }),
       timeLeft: state.timeLeft,
       result: state.result
     };
@@ -121,12 +176,22 @@ export const Replication = {
 
       if (sEntity.id === state.playerId) {
           this.reconcileLocalPlayer(lEntity, sEntity, snapshot.tick);
-      } else {
+      } else if (!sEntity.hidden) {
           // Snap for now, ideally interpolate
           lEntity.x = sEntity.x;
           lEntity.y = sEntity.y;
           lEntity.vx = sEntity.vx;
           lEntity.vy = sEntity.vy;
+          lEntity.facing = sEntity.facing;
+          lEntity.hidden = false;
+      } else {
+          // Entity is hidden. Update last-seen position.
+          if (lEntity.x !== undefined && !lEntity.hidden) {
+              lEntity.lastSeenX = lEntity.x;
+              lEntity.lastSeenY = lEntity.y;
+              lEntity.lastSeenTick = snapshot.tick;
+          }
+          lEntity.hidden = true;
       }
 
       // Sync stats
@@ -163,30 +228,11 @@ export const Replication = {
           const dt = 1 / Server.tickRate;
           for (let i = historyIndex + 1; i < local.inputHistory.length; i++) {
               const entry = local.inputHistory[i];
-              // Simplified re-simulation
-              this.applyInputToEntity(local, entry.actions, dt);
+              applyMovement(local, state.world, entry.actions.moveX || 0, entry.actions.moveY || 0, !!entry.actions.sprint, dt);
           }
       }
 
       // Cleanup history older than server tick
       local.inputHistory = local.inputHistory.slice(historyIndex);
-  },
-
-  applyInputToEntity(entity, actions, dt) {
-      // Re-use logic from Server.simulateMovement (simplified)
-      const moveX = actions.moveX || 0;
-      const moveY = actions.moveY || 0;
-      const isSprinting = !!actions.sprint;
-
-      const config = Server.getMovementConfig(entity);
-      const targetVx = moveX * config.maxSpeed * (isSprinting ? 1.3 : 1.0);
-      const targetVy = moveY * config.maxSpeed * (isSprinting ? 1.3 : 1.0);
-      const accel = (moveX !== 0 || moveY !== 0) ? config.acceleration : config.friction;
-
-      entity.vx += (targetVx - entity.vx) * accel * dt;
-      entity.vy += (targetVy - entity.vy) * accel * dt;
-
-      entity.x += entity.vx * dt;
-      entity.y += entity.vy * dt;
   }
 };

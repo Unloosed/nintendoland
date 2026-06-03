@@ -86,6 +86,7 @@ export const AttractionPacks = {
 
 export function initApp() {
   setPhase(Phases.MATCH);
+  state.countdown = 3;
   const availableLevels = levels[state.mode];
   const level = availableLevels[Math.floor(Math.random() * availableLevels.length)];
   state.world.map.blockers = level.blockers;
@@ -102,7 +103,7 @@ export function initApp() {
   }
 
   import("./network.js").then(m => {
-      m.Server.init(state.world.entities);
+      m.Server.init(state.world);
   });
 
   state.running = true;

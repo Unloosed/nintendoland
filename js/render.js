@@ -34,8 +34,14 @@ export function render() {
   visibleEntities.forEach((entity) => {
     if (!entity.hidden) {
       drawEntity(entity);
+    } else if (entity.lastSeenX !== undefined) {
+      drawLastSeenMarker(entity);
     }
   });
+
+  if (state.ui.debugVisibility) {
+    drawVisibilityDebug();
+  }
 
   ctx.restore();
 
@@ -85,6 +91,28 @@ function drawBlockers(blockers) {
   });
 }
 
+function drawLastSeenMarker(entity) {
+  ctx.save();
+  ctx.globalAlpha = 0.4;
+  ctx.fillStyle = entity.color;
+  ctx.strokeStyle = "white";
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 2]);
+
+  ctx.beginPath();
+  ctx.arc(entity.lastSeenX, entity.lastSeenY, entity.radius * 0.8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Draw "?" icon
+  ctx.fillStyle = "white";
+  ctx.font = "bold 12px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("?", entity.lastSeenX, entity.lastSeenY + 4);
+
+  ctx.restore();
+}
+
 function drawEntity(entity) {
   if (entity.flashlightActive) {
     drawFlashlight(entity);
@@ -122,6 +150,13 @@ function drawEntity(entity) {
     sy = 1 - Math.sin(state.tick * 0.2) * 0.1;
   }
 
+  // Hit/Tag feedback
+  if (entity.hitTimer > 0) {
+      sx *= 1.4;
+      sy *= 0.6;
+      ctx.fillStyle = "white";
+  }
+
   ctx.beginPath();
   ctx.ellipse(entity.x, entity.y, entity.radius * sx, entity.radius * sy, 0, 0, Math.PI * 2);
   ctx.fill();
@@ -154,6 +189,8 @@ function drawEntity(entity) {
 
   ctx.restore();
   drawSpecializedUI(entity);
+
+  if (entity.hitTimer > 0) entity.hitTimer -= 0.03; // Simple decay
 }
 
 function darkenColor(hex, percent) {
@@ -210,6 +247,28 @@ function drawFlashlight(entity) {
   ctx.arc(entity.x, entity.y, range, facing - 0.6, facing + 0.6);
   ctx.closePath();
   ctx.fill();
+  ctx.restore();
+}
+
+function drawVisibilityDebug() {
+  ctx.save();
+  // Draw "Real" positions of all entities in wireframe
+  state.world.entities.forEach(entity => {
+    ctx.strokeStyle = entity.color;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([2, 2]);
+    ctx.beginPath();
+    ctx.arc(entity.x, entity.y, entity.radius, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Line from real to last-seen if hidden
+    if (entity.hidden && entity.lastSeenX !== undefined) {
+      ctx.beginPath();
+      ctx.moveTo(entity.x, entity.y);
+      ctx.lineTo(entity.lastSeenX, entity.lastSeenY);
+      ctx.stroke();
+    }
+  });
   ctx.restore();
 }
 

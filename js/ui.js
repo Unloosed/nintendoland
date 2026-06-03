@@ -141,7 +141,7 @@ export function updateHUD() {
     const countdownOverlay = document.getElementById("countdownOverlay");
 
     // Auto-transition to results phase if match is over
-    if (state.result && state.currentPhase === Phases.MATCH) {
+    if (state.result && (state.currentPhase === Phases.MATCH)) {
       setPhase(Phases.RESULTS);
       const resTitle = document.getElementById("resultTitle");
       const resBody = document.getElementById("resultBody");
@@ -157,10 +157,10 @@ export function updateHUD() {
 
     const modeTitleEl = document.getElementById("hudModeTitle");
     if (modeTitleEl) {
-      if (state.currentPhase === Phases.LOBBY) {
-        modeTitleEl.textContent = "Party Lobby";
-      } else if (state.currentPhase === Phases.REPLAY) {
+      if (state.currentPhase === Phases.REPLAY) {
         modeTitleEl.textContent = "Match Replay";
+      } else if (state.currentPhase === Phases.LOBBY) {
+        modeTitleEl.textContent = "Party Lobby";
       } else {
         const modeName = state.mode === "mario_chase" ? "Mario Chase" : "Luigi's Ghost Mansion";
         const roleName = state.role === "mario" ? "Mario" : state.role === "chaser" ? "Chaser" : state.role === "ghost" ? "Ghost" : "Ghost Hunter";

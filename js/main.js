@@ -60,7 +60,7 @@ function init() {
         };
 
         // 2. Simulated Server Processing (Snapshot is delayed by 100ms)
-        Server.processInput(state.playerId, command);
+        Server.update(state.playerId, command, dt);
         if (state.tick % 3 === 0) { // 10Hz snapshot rate
             setTimeout(() => {
                 const snapshot = Server.generateSnapshot(state.playerId);
@@ -94,15 +94,18 @@ function init() {
         }
         if (isKeyPressed("KeyM")) {
           state.ui.showMinimap = !state.ui.showMinimap;
-          // Add a small delay to avoid rapid toggling
           keys.delete("KeyM");
+        }
+        if (isKeyPressed("KeyV")) {
+          state.ui.debugVisibility = !state.ui.debugVisibility;
+          keys.delete("KeyV");
         }
       }
     }
 
     if (state.currentPhase === Phases.REPLAY) {
       const frame = state.replay.recording[state.replay.currentFrame];
-      if (frame) {
+      if (frame && state.replay.isPlaying) {
         state.world.entities = frame.entities;
         state.timeLeft = frame.timeLeft;
         state.replay.currentFrame++;
