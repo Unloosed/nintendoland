@@ -1,21 +1,121 @@
-export function setupResponsiveMenu() {
-  const toggle = document.getElementById("menuToggle");
-  const backdrop = document.getElementById("drawerBackdrop");
-  const body = document.body;
-  if (!toggle || !backdrop) return;
-  const close = () => {
-    body.classList.remove("drawer-open");
-    toggle.setAttribute("aria-expanded", "false");
-  };
-  const open = () => {
-    body.classList.add("drawer-open");
-    toggle.setAttribute("aria-expanded", "true");
-  };
-  toggle.addEventListener("click", () =>
-    body.classList.contains("drawer-open") ? close() : open(),
-  );
-  backdrop.addEventListener("click", close);
-  window.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") close();
-  });
+import { state, resetState } from './game-state.js';
+import { initApp } from './app.js';
+
+export function setupUI() {
+    const ui = {
+        modeGrid: document.getElementById('modeGrid'),
+        roleGrid: document.getElementById('roleGrid'),
+        startButton: document.getElementById('startButton'),
+        cycleButton: document.getElementById('cycleButton'),
+        playAgainButton: document.getElementById('playAgainButton'),
+        menuToggle: document.getElementById('menuToggle'),
+        drawerBackdrop: document.getElementById('drawerBackdrop'),
+        startOverlay: document.getElementById('startOverlay'),
+        resultOverlay: document.getElementById('resultOverlay'),
+        resultTitle: document.getElementById('resultTitle'),
+        resultBody: document.getElementById('resultBody')
+    };
+
+    const modes = [
+        { id: 'mario_chase', name: 'Mario Chase', desc: 'Symmetrical pursuit' },
+        { id: 'ghost_mansion', name: 'Luigi\'s Ghost Mansion', desc: 'Asymmetric stealth' }
+    ];
+
+    const roles = {
+        mario_chase: [
+            { id: 'mario', name: 'Mario', desc: 'Run and escape' },
+            { id: 'chaser', name: 'Chaser', desc: 'Catch Mario' }
+        ],
+        ghost_mansion: [
+            { id: 'tracker', name: 'Ghost Hunter', desc: 'Hunt the ghost' },
+            { id: 'ghost', name: 'Ghost', desc: 'Faint hunters' }
+        ]
+    };
+
+    function renderSelectors() {
+        ui.modeGrid.innerHTML = '';
+        modes.forEach(m => {
+            const btn = document.createElement('button');
+            btn.className = `mode-card ${state.mode === m.id ? 'active' : ''}`;
+            btn.innerHTML = `<strong>${m.name}</strong><small>${m.desc}</small>`;
+            btn.onclick = () => { state.mode = m.id; state.role = roles[m.id][0].id; renderSelectors(); };
+            ui.modeGrid.appendChild(btn);
+        });
+
+        ui.roleGrid.innerHTML = '';
+        roles[state.mode].forEach(r => {
+            const btn = document.createElement('button');
+            btn.className = `role-card ${state.role === r.id ? 'active' : ''}`;
+            btn.innerHTML = `<strong>${r.name}</strong><small>${r.desc}</small>`;
+            btn.onclick = () => { state.role = r.id; renderSelectors(); };
+            ui.roleGrid.appendChild(btn);
+        });
+    }
+
+    ui.startButton.onclick = () => {
+        ui.startOverlay.classList.add('hidden');
+        initApp();
+    };
+
+    ui.cycleButton.onclick = () => {
+        const idx = modes.findIndex(m => m.id === state.mode);
+        state.mode = modes[(idx + 1) % modes.length].id;
+        state.role = roles[state.mode][0].id;
+        renderSelectors();
+    };
+
+    ui.playAgainButton.onclick = () => {
+        ui.resultOverlay.classList.add('hidden');
+        resetState();
+        initApp();
+    };
+
+    // Responsive menu
+    const closeMenu = () => {
+        document.body.classList.remove('drawer-open');
+    };
+    ui.menuToggle.onclick = () => document.body.classList.toggle('drawer-open');
+    ui.drawerBackdrop.onclick = closeMenu;
+
+    renderSelectors();
+}
+
+export function updateHUD() {
+    const modeTitleEl = document.getElementById('hudModeTitle');
+    if (modeTitleEl) {
+        const modeName = state.mode === 'mario_chase' ? 'Mario Chase' : 'Luigi\'s Ghost Mansion';
+        const roleName = state.role === 'mario' ? 'Mario' : (state.role === 'chaser' ? 'Chaser' : (state.role === 'ghost' ? 'Ghost' : 'Ghost Hunter'));
+        modeTitleEl.textContent = `${modeName} · ${roleName}`;
+    }
+
+    const timerEl = document.getElementById('hudTimer');
+    const energyEl = document.getElementById('energyMetric');
+    const scoreEl = document.getElementById('scoreMetric');
+    const stateEl = document.getElementById('stateMetric');
+    const resultOverlay = document.getElementById('resultOverlay');
+
+    if (timerEl) {
+        const totalSec = Math.ceil(state.timeLeft / 1000);
+        const mm = String(Math.floor(totalSec / 60)).padStart(2, '0');
+        const ss = String(totalSec % 60).padStart(2, '0');
+        timerEl.textContent = `${mm}:${ss}`;
+    }
+
+    const player = state.world.entities.find(e => e.id === state.playerId);
+    if (player) {
+        if (state.mode === 'ghost_mansion' && player.role === 'tracker') {
+            energyEl.textContent = `${Math.round(player.battery)}%`;
+        } else {
+            energyEl.textContent = Math.round(player.energy || 0);
+        }
+        scoreEl.textContent = Math.round(player.score || 0);
+    }
+
+    stateEl.textContent = state.running ? 'Live' : 'Ready';
+
+    if (state.result && resultOverlay.classList.contains('hidden')) {
+        document.getElementById('resultTitle').textContent = state.result.success ? 'Victory' : 'Defeat';
+        document.getElementById('resultBody').textContent = state.result.reason;
+        resultOverlay.classList.remove('hidden');
+    }
 }

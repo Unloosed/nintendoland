@@ -91,7 +91,7 @@
             }
             .app {
                 display: grid;
-                grid-template-columns: 320px 1fr;
+                grid-template-columns: minmax(280px, 24rem) minmax(0, 1fr);
                 min-height: 100vh;
             }
             .sidebar,
@@ -108,8 +108,9 @@
                 border-right: 1px solid var(--color-divider);
                 display: flex;
                 flex-direction: column;
-                gap: var(--space-5);
+                gap: var(--space-4);
                 overflow: auto;
+                min-width: 0;
             }
             .logo {
                 display: flex;
@@ -146,13 +147,14 @@
             p {
                 margin: 0;
                 color: var(--color-text-muted);
-                max-width: 60ch;
+                max-width: 50ch;
             }
             .panel {
                 background: var(--color-surface-2);
                 border: 1px solid var(--color-border);
                 border-radius: var(--radius-lg);
                 padding: var(--space-4);
+                min-width: 0;
             }
             .stack {
                 display: flex;
@@ -163,6 +165,7 @@
             .role-grid {
                 display: grid;
                 gap: var(--space-3);
+                grid-template-columns: minmax(0, 1fr);
             }
             .chip-row {
                 display: flex;
@@ -269,6 +272,130 @@
             .hud-value {
                 font-size: var(--text-lg);
                 font-weight: 700;
+                font-variant-numeric: tabular-nums lining-nums;
+            }
+            .objective-list {
+                display: grid;
+                gap: 0.45rem;
+                margin-top: 0.5rem;
+                font-size: var(--text-sm);
+                color: var(--color-text-muted);
+            }
+            .objective-item.active {
+                color: var(--color-text);
+            }
+            .legend {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+            .legend span {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.45rem;
+                font-size: var(--text-xs);
+                color: var(--color-text-muted);
+            }
+            .legend i {
+                width: 12px;
+                height: 12px;
+                border-radius: 999px;
+                display: inline-block;
+            }
+            .overlay-card {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: min(760px, calc(100% - 2rem));
+                border-radius: var(--radius-xl);
+                padding: var(--space-6);
+                pointer-events: auto;
+            }
+            .overlay-actions {
+                display: flex;
+                flex-wrap: wrap;
+                gap: var(--space-3);
+                margin-top: var(--space-5);
+            }
+            .btn {
+                pointer-events: auto;
+                cursor: pointer;
+                border: none;
+                border-radius: var(--radius-md);
+                min-height: 44px;
+                padding: 0.8rem 1rem;
+                transition:
+                    transform var(--transition),
+                    background var(--transition),
+                    border-color var(--transition);
+            }
+            .btn:hover {
+                transform: translateY(-1px);
+            }
+            .btn-primary {
+                background: var(--color-primary);
+                color: #041314;
+                font-weight: 700;
+            }
+            .btn-secondary {
+                background: rgba(255, 255, 255, 0.05);
+                color: var(--color-text);
+                border: 1px solid var(--color-border);
+            }
+            .status-grid {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: var(--space-3);
+                margin-top: var(--space-4);
+            }
+            .metric {
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid var(--color-divider);
+                border-radius: var(--radius-lg);
+                padding: var(--space-3);
+            }
+            .metric label {
+                display: block;
+                color: var(--color-text-faint);
+                font-size: var(--text-xs);
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+            }
+            .metric strong {
+                display: block;
+                margin-top: 0.35rem;
+                font-size: var(--text-lg);
+            }
+            .footer-note {
+                margin-top: auto;
+                line-height: 1.5;
+                font-size: var(--text-xs);
+                color: var(--color-text-faint);
+            }
+            .hidden {
+                display: none !important;
+            }
+            .toast {
+                position: absolute;
+                right: var(--space-5);
+                bottom: calc(var(--space-5) + 110px);
+                max-width: 360px;
+                padding: var(--space-3) var(--space-4);
+                border-radius: var(--radius-lg);
+                background: rgba(9, 15, 21, 0.92);
+                border: 1px solid var(--color-border);
+                color: var(--color-text);
+                box-shadow: var(--shadow-lg);
+                opacity: 0;
+                transform: translateY(10px);
+                transition:
+                    opacity var(--transition),
+                    transform var(--transition);
+            }
+            .toast.show {
+                opacity: 1;
+                transform: translateY(0);
             }
             .menu-toggle {
                 display: none;
@@ -282,6 +409,7 @@
                 padding: 0.7rem 0.9rem;
                 border-radius: 999px;
                 box-shadow: var(--shadow-md);
+                cursor: pointer;
             }
             .drawer-backdrop {
                 display: none;
@@ -290,11 +418,22 @@
                 background: rgba(0, 0, 0, 0.45);
                 z-index: 40;
             }
+            @media (max-width: 1200px) {
+                .app {
+                    grid-template-columns: minmax(280px, 34vw) minmax(0, 1fr);
+                }
+                .overlay-card {
+                    width: min(680px, calc(100% - 2rem));
+                }
+            }
             @media (max-width: 980px) {
+                body {
+                    overflow: auto;
+                }
                 .menu-toggle {
                     display: inline-flex;
                 }
-                .shell {
+                .app {
                     grid-template-columns: 1fr;
                 }
                 .sidebar {
@@ -304,13 +443,27 @@
                     transform: translateX(-102%);
                     transition: transform 0.25s ease;
                     z-index: 50;
-                    box-shadow: var(--shadow-xl);
+                    box-shadow: var(--shadow-lg);
+                    border-right: 1px solid var(--color-divider);
                 }
                 body.drawer-open .sidebar {
                     transform: translateX(0);
                 }
                 body.drawer-open .drawer-backdrop {
                     display: block;
+                }
+                .main,
+                #gameCanvas {
+                    height: 72vh;
+                    min-height: 480px;
+                }
+                .hud-top,
+                .hud-bottom {
+                    flex-direction: column;
+                    align-items: stretch;
+                }
+                .status-grid {
+                    grid-template-columns: 1fr;
                 }
             }
         </style>
@@ -325,7 +478,189 @@
             ☰ Menu
         </button>
         <div class="drawer-backdrop" id="drawerBackdrop"></div>
-        <div class="shell">...</div>
+        <div class="app">
+            <aside class="sidebar">
+                <div class="logo">
+                    <svg
+                        viewBox="0 0 64 64"
+                        fill="none"
+                        aria-label="Prototype logo"
+                        role="img"
+                    >
+                        <circle
+                            cx="32"
+                            cy="32"
+                            r="24"
+                            stroke="currentColor"
+                            stroke-width="4"
+                        />
+                        <path
+                            d="M20 40L32 18L44 40"
+                            stroke="currentColor"
+                            stroke-width="5"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        />
+                        <path
+                            d="M26 33H38"
+                            stroke="currentColor"
+                            stroke-width="5"
+                            stroke-linecap="round"
+                        />
+                    </svg>
+                    <div>
+                        <div class="eyebrow">Shared Runtime Prototype</div>
+                        <h1>Nintendo Land Reimagined</h1>
+                    </div>
+                </div>
+
+                <div class="panel stack">
+                    <h2>Architecture slice</h2>
+                    <p>
+                        This playable build implements one executable, one
+                        ECS-style simulation, role-specific knowledge,
+                        fixed-step rules, and a server-authoritative feel
+                        through local command validation and filtered HUD data.
+                    </p>
+                    <div class="chip-row">
+                        <span class="chip">30 Hz simulation</span>
+                        <span class="chip">Asymmetric roles</span>
+                        <span class="chip">Visibility system</span>
+                        <span class="chip">Shared systems</span>
+                    </div>
+                </div>
+
+                <div class="panel stack">
+                    <h2>Attraction package</h2>
+                    <div id="modeGrid" class="mode-grid"></div>
+                </div>
+
+                <div class="panel stack">
+                    <h2>Role profile</h2>
+                    <div id="roleGrid" class="role-grid"></div>
+                </div>
+
+                <div class="panel controls">
+                    <h2>Controls</h2>
+                    <div><kbd>WASD</kbd> Move</div>
+                    <div><kbd>Shift</kbd> Sprint or burst</div>
+                    <div><kbd>Space</kbd> Primary ability</div>
+                    <div><kbd>E</kbd> Context action</div>
+                    <div><kbd>R</kbd> Restart round</div>
+                    <div><kbd>M</kbd> Toggle tactical minimap</div>
+                </div>
+
+                <div class="footer-note">
+                    Prototype scope: Mario Chase and Luigi's Ghost Mansion
+                    implemented with shared movement, objective, visibility, AI,
+                    and scoring systems.
+                </div>
+            </aside>
+
+            <main class="main">
+                <canvas
+                    id="gameCanvas"
+                    width="1280"
+                    height="720"
+                    aria-label="Game canvas"
+                ></canvas>
+                <div class="hud">
+                    <div class="hud-top">
+                        <div class="hud-panel">
+                            <div class="hud-title" id="hudModeTitle">
+                                Mario Chase
+                            </div>
+                            <div class="hud-value" id="hudTimer">02:00</div>
+                            <div class="objective-list" id="objectives"></div>
+                        </div>
+                        <div class="hud-panel">
+                            <div class="hud-title">Role intelligence</div>
+                            <div
+                                class="objective-list"
+                                id="knowledgeFeed"
+                            ></div>
+                        </div>
+                    </div>
+                    <div class="hud-bottom">
+                        <div class="hud-panel">
+                            <div class="legend">
+                                <span
+                                    ><i style="background: #30d5c8"></i
+                                    >You</span
+                                >
+                                <span
+                                    ><i style="background: #f5c451"></i
+                                    >Objective</span
+                                >
+                                <span
+                                    ><i style="background: #ff6b88"></i
+                                    >Threat</span
+                                >
+                                <span
+                                    ><i style="background: #59a9ff"></i
+                                    >Tracker</span
+                                >
+                            </div>
+                        </div>
+                        <div class="hud-panel">
+                            <div class="hud-title">Round status</div>
+                            <div class="status-grid">
+                                <div class="metric">
+                                    <label>Energy</label
+                                    ><strong id="energyMetric">100</strong>
+                                </div>
+                                <div class="metric">
+                                    <label>Score</label
+                                    ><strong id="scoreMetric">0</strong>
+                                </div>
+                                <div class="metric">
+                                    <label>State</label
+                                    ><strong id="stateMetric">Ready</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <section id="startOverlay" class="overlay-card">
+                    <div class="eyebrow">Data-driven game mode</div>
+                    <h2>Playable ECS prototype</h2>
+                    <p>
+                        This browser game turns the architecture document into a
+                        focused proof-of-concept: one runtime loads different
+                        attraction rule packs, swaps role knowledge, and reuses
+                        the same movement, collision, objective, scoring, and AI
+                        systems.
+                    </p>
+                    <div class="overlay-actions">
+                        <button class="btn btn-primary" id="startButton">
+                            Start match
+                        </button>
+                        <button class="btn btn-secondary" id="cycleButton">
+                            Cycle attraction
+                        </button>
+                    </div>
+                </section>
+
+                <section
+                    id="resultOverlay"
+                    class="overlay-card hidden"
+                    aria-live="polite"
+                >
+                    <div class="eyebrow">Round complete</div>
+                    <h2 id="resultTitle">Victory</h2>
+                    <p id="resultBody"></p>
+                    <div class="overlay-actions">
+                        <button class="btn btn-primary" id="playAgainButton">
+                            Play again
+                        </button>
+                    </div>
+                </section>
+
+                <div class="toast" id="toast"></div>
+            </main>
+        </div>
+
         <script type="module" src="./js/main.js"></script>
     </body>
 </html>
