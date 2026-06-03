@@ -1,5 +1,6 @@
 import { state, resetState, setPhase, Phases } from "./game-state.js";
 import { initApp, initLobby } from "./app.js";
+import { audio } from "./audio.js";
 
 export function setupUI() {
   const ui = {
@@ -77,10 +78,9 @@ export function setupUI() {
   if (ui.startButton) {
     ui.startButton.onclick = (e) => {
       e.preventDefault();
+      audio.init(); // Initialize context on first interaction
       console.log("Start button clicked, going to Lobby");
-      if (ui.startOverlay) ui.startOverlay.classList.add("hidden");
       initLobby();
-      if (ui.lobbyControls) ui.lobbyControls.classList.remove("hidden");
     };
   }
 
@@ -89,7 +89,6 @@ export function setupUI() {
       e.preventDefault();
       console.log("Launch Match clicked");
       initApp();
-      if (ui.lobbyControls) ui.lobbyControls.classList.add("hidden");
     };
   }
 
@@ -107,10 +106,20 @@ export function setupUI() {
   if (ui.playAgainButton) {
     ui.playAgainButton.onclick = (e) => {
       e.preventDefault();
-      if (ui.resultOverlay) ui.resultOverlay.classList.add("hidden");
       resetState();
       initLobby();
-      if (ui.lobbyControls) ui.lobbyControls.classList.remove("hidden");
+    };
+  }
+
+  const viewReplayButton = document.getElementById("viewReplayButton");
+  if (viewReplayButton) {
+    viewReplayButton.onclick = (e) => {
+        e.preventDefault();
+        if (state.replay.recording.length > 0) {
+            state.replay.currentFrame = 0;
+            state.replay.isPlaying = true;
+            setPhase(Phases.REPLAY);
+        }
     };
   }
 
@@ -125,63 +134,78 @@ export function setupUI() {
 }
 
 export function updateHUD() {
-  const modeTitleEl = document.getElementById("hudModeTitle");
-  if (modeTitleEl) {
-    if (state.currentPhase === Phases.LOBBY) {
-      modeTitleEl.textContent = "Party Lobby";
-    } else {
-      const modeName =
-        state.mode === "mario_chase" ? "Mario Chase" : "Luigi's Ghost Mansion";
-      const roleName =
-        state.role === "mario"
-          ? "Mario"
-          : state.role === "chaser"
-            ? "Chaser"
-            : state.role === "ghost"
-              ? "Ghost"
-              : "Ghost Hunter";
-      modeTitleEl.textContent = `${modeName} · ${roleName}`;
+  try {
+    const startOverlay = document.getElementById("startOverlay");
+    const lobbyControls = document.getElementById("lobbyControls");
+    const resultOverlay = document.getElementById("resultOverlay");
+    const countdownOverlay = document.getElementById("countdownOverlay");
+
+    // Auto-transition to results phase if match is over
+    if (state.result && (state.currentPhase === Phases.MATCH)) {
+      setPhase(Phases.RESULTS);
+      const resTitle = document.getElementById("resultTitle");
+      const resBody = document.getElementById("resultBody");
+      if (resTitle) resTitle.textContent = state.result.success ? "Victory" : "Defeat";
+      if (resBody) resBody.textContent = state.result.reason;
+      if (state.result.success) audio.playVictory();
+      else audio.playDefeat();
     }
-  }
 
-  const timerEl = document.getElementById("hudTimer");
-  const energyEl = document.getElementById("energyMetric");
-  const scoreEl = document.getElementById("scoreMetric");
-  const stateEl = document.getElementById("stateMetric");
-  const resultOverlay = document.getElementById("resultOverlay");
+    if (startOverlay) startOverlay.classList.toggle("hidden", state.currentPhase !== Phases.FRONTEND);
+    if (lobbyControls) lobbyControls.classList.toggle("hidden", state.currentPhase !== Phases.LOBBY);
+    if (resultOverlay) resultOverlay.classList.toggle("hidden", state.currentPhase !== Phases.RESULTS);
 
-  if (timerEl) {
-    if (state.currentPhase === Phases.LOBBY) {
-      timerEl.textContent = "--:--";
-    } else {
-      const totalSec = Math.ceil(state.timeLeft / 1000);
-      const mm = String(Math.floor(totalSec / 60)).padStart(2, "0");
-      const ss = String(totalSec % 60).padStart(2, "0");
-      timerEl.textContent = `${mm}:${ss}`;
+    const modeTitleEl = document.getElementById("hudModeTitle");
+    if (modeTitleEl) {
+      if (state.currentPhase === Phases.REPLAY) {
+        modeTitleEl.textContent = "Match Replay";
+      } else if (state.currentPhase === Phases.LOBBY) {
+        modeTitleEl.textContent = "Party Lobby";
+      } else {
+        const modeName = state.mode === "mario_chase" ? "Mario Chase" : "Luigi's Ghost Mansion";
+        const roleName = state.role === "mario" ? "Mario" : state.role === "chaser" ? "Chaser" : state.role === "ghost" ? "Ghost" : "Ghost Hunter";
+        modeTitleEl.textContent = `${modeName} · ${roleName}`;
+      }
     }
-  }
 
-  const player = state.world.entities.find((e) => e.id === state.playerId);
-  if (player) {
-    if (state.mode === "ghost_mansion" && player.role === "tracker") {
-      energyEl.textContent = `${Math.round(player.battery)}%`;
-    } else {
-      energyEl.textContent = Math.round(player.energy || 0);
+    const timerEl = document.getElementById("hudTimer");
+    if (timerEl) {
+      if (state.currentPhase === Phases.LOBBY) {
+        timerEl.textContent = "--:--";
+      } else {
+        const totalSec = Math.ceil(state.timeLeft / 1000);
+        const mm = String(Math.floor(totalSec / 60)).padStart(2, "0");
+        const ss = String(totalSec % 60).padStart(2, "0");
+        timerEl.textContent = `${mm}:${ss}`;
+      }
     }
-    scoreEl.textContent = Math.round(player.score || 0);
-  } else {
-    energyEl.textContent = "0";
-    scoreEl.textContent = "0";
-  }
 
-  stateEl.textContent = state.currentPhase;
+    const player = state.world.entities.find((e) => e.id === state.playerId);
+    const energyEl = document.getElementById("energyMetric");
+    const scoreEl = document.getElementById("scoreMetric");
+    if (player) {
+      if (energyEl) {
+          if (state.mode === "ghost_mansion" && player.role === "tracker") energyEl.textContent = `${Math.round(player.battery)}%`;
+          else energyEl.textContent = Math.round(player.energy || 0);
+      }
+      if (scoreEl) scoreEl.textContent = Math.round(player.score || 0);
+    }
 
-  if (state.result && resultOverlay.classList.contains("hidden")) {
-    setPhase(Phases.RESULTS);
-    document.getElementById("resultTitle").textContent = state.result.success
-      ? "Victory"
-      : "Defeat";
-    document.getElementById("resultBody").textContent = state.result.reason;
-    resultOverlay.classList.remove("hidden");
+    const stateEl = document.getElementById("stateMetric");
+    if (stateEl) stateEl.textContent = state.currentPhase;
+
+    if (countdownOverlay) {
+        if (state.currentPhase === Phases.MATCH && state.countdown > 0) {
+            countdownOverlay.classList.remove("hidden");
+            const val = Math.ceil(state.countdown);
+            countdownOverlay.textContent = val > 0 ? val : "GO!";
+            countdownOverlay.style.opacity = state.countdown % 1;
+        } else {
+            countdownOverlay.classList.add("hidden");
+        }
+    }
+
+  } catch (err) {
+      console.error("HUD Error:", err);
   }
 }

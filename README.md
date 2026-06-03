@@ -35,9 +35,10 @@ To bypass browser CORS restrictions for ES modules, you must serve the project v
 ## Controls
 
 - **WASD**: Move
-- **Shift**: Sprint
+- **Shift**: Sprint (or Burst Dash for Mario)
 - **Space**: Primary Ability (Flashlight for Hunters)
 - **M**: Toggle Minimap
+- **V**: Toggle Visibility Debug
 - **R**: Restart Round
 
 ## Project Structure

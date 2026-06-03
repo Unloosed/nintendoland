@@ -4,6 +4,7 @@ export const Phases = {
   LOBBY: "LOBBY",
   MATCH: "MATCH",
   RESULTS: "RESULTS",
+  REPLAY: "REPLAY",
 };
 
 export const state = {
@@ -21,6 +22,12 @@ export const state = {
     [Phases.LOBBY]: createWorld(),
     [Phases.MATCH]: createWorld(),
     [Phases.RESULTS]: createWorld(),
+    [Phases.REPLAY]: createWorld(),
+  },
+  replay: {
+    recording: [],
+    isPlaying: false,
+    currentFrame: 0,
   },
   ui: {
     showMinimap: true,
@@ -77,6 +84,7 @@ export function resetState() {
   state.worlds[Phases.LOBBY] = createWorld();
   state.worlds[Phases.MATCH] = createWorld();
   state.worlds[Phases.RESULTS] = createWorld();
+  state.worlds[Phases.REPLAY] = createWorld();
   state.ui.lastKnownThreat = null;
 }
 
