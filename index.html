@@ -661,6 +661,15 @@
             </main>
         </div>
 
-        <script type="module" src="./js/main.js"></script>
+        <script type="module" src="js/main.js"></script>
+        <script>
+            // Help the user if they try to run this via file:// protocol
+            if (window.location.protocol === 'file:') {
+                console.error('ES Modules are not supported via file:// protocol due to CORS security. Please use a local web server (e.g., python3 -m http.server 8000).');
+                setTimeout(() => {
+                    alert('ES Modules are not supported via file:// protocol due to CORS security. \n\nPlease run a local web server to play the game. \nInstructions are in the README.md file.');
+                }, 1000);
+            }
+        </script>
     </body>
 </html>

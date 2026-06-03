@@ -34,57 +34,68 @@ export function setupUI() {
 
     function renderSelectors() {
         console.log('Rendering selectors...', state.mode, state.role);
-        ui.modeGrid.innerHTML = '';
-        modes.forEach(m => {
-            const btn = document.createElement('button');
-            btn.className = `mode-card ${state.mode === m.id ? 'active' : ''}`;
-            btn.innerHTML = `<strong>${m.name}</strong><small>${m.desc}</small>`;
-            btn.onclick = (e) => {
-                e.preventDefault();
-                console.log('Mode selected:', m.id);
-                state.mode = m.id;
-                state.role = roles[m.id][0].id;
-                renderSelectors();
-            };
-            ui.modeGrid.appendChild(btn);
-        });
+        if (ui.modeGrid) {
+            ui.modeGrid.innerHTML = '';
+            modes.forEach(m => {
+                const btn = document.createElement('button');
+                btn.className = `mode-card ${state.mode === m.id ? 'active' : ''}`;
+                btn.innerHTML = `<strong>${m.name}</strong><small>${m.desc}</small>`;
+                btn.onclick = (e) => {
+                    e.preventDefault();
+                    console.log('Mode selected:', m.id);
+                    state.mode = m.id;
+                    state.role = roles[m.id][0].id;
+                    renderSelectors();
+                };
+                ui.modeGrid.appendChild(btn);
+            });
+        }
 
-        ui.roleGrid.innerHTML = '';
-        roles[state.mode].forEach(r => {
-            const btn = document.createElement('button');
-            btn.className = `role-card ${state.role === r.id ? 'active' : ''}`;
-            btn.innerHTML = `<strong>${r.name}</strong><small>${r.desc}</small>`;
-            btn.onclick = (e) => {
-                e.preventDefault();
-                console.log('Role selected:', r.id);
-                state.role = r.id;
-                renderSelectors();
-            };
-            ui.roleGrid.appendChild(btn);
-        });
+        if (ui.roleGrid) {
+            ui.roleGrid.innerHTML = '';
+            roles[state.mode].forEach(r => {
+                const btn = document.createElement('button');
+                btn.className = `role-card ${state.role === r.id ? 'active' : ''}`;
+                btn.innerHTML = `<strong>${r.name}</strong><small>${r.desc}</small>`;
+                btn.onclick = (e) => {
+                    e.preventDefault();
+                    console.log('Role selected:', r.id);
+                    state.role = r.id;
+                    renderSelectors();
+                };
+                ui.roleGrid.appendChild(btn);
+            });
+        }
     }
 
-    ui.startButton.onclick = (e) => {
-        e.preventDefault();
-        console.log('Start button clicked');
-        ui.startOverlay.classList.add('hidden');
-        initApp();
-    };
+    if (ui.startButton) {
+        ui.startButton.onclick = (e) => {
+            e.preventDefault();
+            console.log('Start button clicked');
+            if (ui.startOverlay) ui.startOverlay.classList.add('hidden');
+            initApp();
+        };
+    }
 
-    ui.cycleButton.onclick = (e) => {
-        e.preventDefault();
-        console.log('Cycle button clicked');
-        const idx = modes.findIndex(m => m.id === state.mode);
-        state.mode = modes[(idx + 1) % modes.length].id;
-        state.role = roles[state.mode][0].id;
-        renderSelectors();
-    };
+    if (ui.cycleButton) {
+        ui.cycleButton.onclick = (e) => {
+            e.preventDefault();
+            console.log('Cycle button clicked');
+            const idx = modes.findIndex(m => m.id === state.mode);
+            state.mode = modes[(idx + 1) % modes.length].id;
+            state.role = roles[state.mode][0].id;
+            renderSelectors();
+        };
+    }
 
-    ui.playAgainButton.onclick = () => {
-        ui.resultOverlay.classList.add('hidden');
-        resetState();
-        initApp();
-    };
+    if (ui.playAgainButton) {
+        ui.playAgainButton.onclick = (e) => {
+            e.preventDefault();
+            if (ui.resultOverlay) ui.resultOverlay.classList.add('hidden');
+            resetState();
+            initApp();
+        };
+    }
 
     // Responsive menu
     const closeMenu = () => {
