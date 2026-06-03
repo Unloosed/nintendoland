@@ -4,7 +4,7 @@
   "description": "A proper ECS-based reimagining of Nintendo Land's Mario Chase and Luigi's Ghost Mansion.",
   "main": "js/main.js",
   "scripts": {
-    "start": "python3 -m http.server 8000"
+    "start": "python -m http.server 8000"
   },
   "keywords": [],
   "author": "",

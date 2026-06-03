@@ -24,10 +24,12 @@ This project is a modular, ECS-based implementation of two popular Nintendo Land
 To bypass browser CORS restrictions for ES modules, you must serve the project via an HTTP server.
 
 1. **Start the server**:
+
    ```bash
    npm start
    ```
-   *Alternatively, run:* `python3 -m http.server 8000`
+
+   _Alternatively, run:_ `python -m http.server 8000`
 
 2. **Open the game**:
    Navigate to [http://localhost:8000](http://localhost:8000) in your web browser.
