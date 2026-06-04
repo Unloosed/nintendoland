@@ -6,7 +6,7 @@ import { levels } from "./levels.js";
  */
 const Roles = {
   mario: {
-    maxSpeed: 172,
+    maxSpeed: 158,
     acceleration: 12,
     radius: 14,
     color: "#30d5c8",
@@ -14,7 +14,7 @@ const Roles = {
     camera: "chase"
   },
   chaser: {
-    maxSpeed: 158,
+    maxSpeed: 172,
     acceleration: 10,
     radius: 13,
     color: "#59a9ff",
@@ -33,6 +33,13 @@ const Roles = {
     radius: 14,
     color: "#59a9ff",
     abilities: ["flashlight"],
+    camera: "topdown"
+  },
+  yoshi_cart: {
+    maxSpeed: 140,
+    radius: 12,
+    color: "#2ecc71",
+    abilities: [],
     camera: "topdown"
   }
 };
@@ -76,7 +83,8 @@ export function initApp() {
 }
 
 function initMarioChase() {
-  state.timeLeft = 20000;
+  state.timeLeft = 120000;
+  state.marioHeadStart = 10;
   const config = Roles.mario;
 
   const mario = createEntity({
@@ -88,6 +96,21 @@ function initMarioChase() {
   });
 
   if (state.role === "mario") state.playerId = mario.id;
+
+  // Yoshi Carts if only 1 human Toad
+  if (state.role !== "mario") {
+    // We assume state.role === "chaser" means 1 human Toad for this implementation
+    // Ideally we'd count human players, but we follow the logic for single human Toad.
+    for (let i = 0; i < 2; i++) {
+      createEntity({
+        role: "yoshi_cart",
+        x: 1100,
+        y: 100 + i * 500,
+        ...Roles.yoshi_cart,
+        ai: true,
+      });
+    }
+  }
 
   for (let i = 0; i < 3; i++) {
     const chaserConfig = Roles.chaser;

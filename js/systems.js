@@ -4,6 +4,7 @@ import { state, createEntity } from "./game-state.js";
 export function movementSystem(world, dt) {
   world.entities.forEach((entity) => {
     if (!entity.alive) return;
+    if (state.mode === "mario_chase" && state.marioHeadStart > 0 && entity.role !== "mario") return;
 
     let moveX = 0;
     let moveY = 0;
@@ -90,11 +91,18 @@ function getMovementConfig(entity) {
   const map = state.world.map;
   if (state.mode === "mario_chase") {
     // Mud slowdown
+    const onIntactBridge = (map.bridges || []).some(b =>
+      b.state !== "destroyed" &&
+      entity.x > b.x && entity.x < b.x + b.w &&
+      entity.y > b.y && entity.y < b.y + b.h
+    );
+
     const inMud = (map.mud || []).some(m =>
       entity.x > m.x && entity.x < m.x + m.w &&
       entity.y > m.y && entity.y < m.y + m.h
     );
-    if (inMud && entity.superStarTimer <= 0) {
+
+    if (inMud && !onIntactBridge && (entity.superStarTimer || 0) <= 0) {
       config.maxSpeed *= 0.5;
     }
 
@@ -124,7 +132,8 @@ function getMovementConfig(entity) {
       config.acceleration = 10;
       if (entity.stunTimer > 0) config.maxSpeed = 0;
     }
-    } else if (entity.role === "tracker") {
+  } else if (state.mode === "ghost_mansion") {
+    if (entity.role === "tracker") {
       config.maxSpeed = 155;
       if (entity.battery <= 0) config.maxSpeed *= 0.5;
       if (entity.flashlightActive) config.maxSpeed *= 0.85;
@@ -169,15 +178,18 @@ function checkCollision(world, x, y, radius) {
     if (hit) {
       // Mario collapses the bridge
       const mario = world.entities.find(e => e.role === "mario");
-      if (mario && dist({x, y}, mario) < 5) { // If the entity checking collision is Mario (approx)
-         if (b.state === "intact") b.state = "collapsing";
+      // Check if the entity being checked is Mario
+      const isMario = mario && Math.abs(x - mario.x) < 1 && Math.abs(y - mario.y) < 1;
+      if (isMario && b.state === "intact") {
+        b.state = "collapsing";
+        b.collapseTimer = 2.0;
       }
       return true;
     }
     return false;
   });
 
-  return false; // Bridges are NOT blockers for Toads until they collapse
+  return false;
   // Wait, bridges should allow crossing unless destroyed.
   // Actually, blockers should be solid. Mud is not solid.
   // Specs say: Mario crossing a bridge causes it to collapse. Toads can cross indefinitely before collapse.
@@ -395,6 +407,11 @@ function dist(a, b) {
 export function objectiveSystem(world, dt) {
   if (!state.running) return;
 
+  if (state.mode === "mario_chase" && state.marioHeadStart > 0) {
+    state.marioHeadStart = Math.max(0, state.marioHeadStart - dt);
+    return;
+  }
+
   state.timeLeft = Math.max(0, state.timeLeft - dt * 1000);
 
   if (state.mode === "mario_chase") {
@@ -455,7 +472,7 @@ export function scoringSystem(world) {
   const player = world.entities.find((e) => e.id === state.playerId);
   if (player) {
     if (state.mode === "mario_chase") {
-      player.score = Math.floor((20000 - state.timeLeft) / 100);
+      player.score = Math.floor((120000 - state.timeLeft) / 100);
     } else {
       player.score =
         player.role === "ghost"

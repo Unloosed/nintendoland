@@ -15,6 +15,8 @@ export function aiSystem(world, dt) {
         runFromChasers(entity, world, dt);
       } else if (entity.role === "chaser") {
         huntMario(entity, world, dt);
+      } else if (entity.role === "yoshi_cart") {
+        yoshiAI(entity, world, dt);
       }
     } else if (state.mode === "ghost_mansion") {
       if (entity.role === "ghost") {
@@ -61,6 +63,41 @@ function huntMario(entity, world, dt) {
   const len = Math.hypot(dx, dy);
 
   entity.intent = { x: dx / len, y: dy / len };
+}
+
+function yoshiAI(entity, world, dt) {
+  const mario = world.entities.find((e) => e.role === "mario");
+  if (!mario) return;
+
+  entity.stateTimer = (entity.stateTimer || 0) - dt;
+  if (entity.stateTimer <= 0) {
+    // Switch between Patrol and Home-In
+    entity.aiState = entity.aiState === "patrol" ? "home" : "patrol";
+    entity.stateTimer = 3 + Math.random() * 3;
+    if (entity.aiState === "patrol") {
+      entity.patrolTarget = {
+        x: Math.random() * state.world.map.width,
+        y: Math.random() * state.world.map.height
+      };
+    }
+  }
+
+  let tx = 0, ty = 0;
+  if (entity.aiState === "patrol") {
+    tx = entity.patrolTarget.x - entity.x;
+    ty = entity.patrolTarget.y - entity.y;
+  } else {
+    // Home in on Mario
+    tx = mario.x - entity.x;
+    ty = mario.y - entity.y;
+  }
+
+  const len = Math.hypot(tx, ty);
+  if (len > 5) {
+    entity.intent = { x: tx / len, y: ty / len };
+  } else if (entity.aiState === "patrol") {
+     entity.stateTimer = 0; // Pick new patrol target
+  }
 }
 
 function ghostAI(entity, world, dt) {
