@@ -2,6 +2,11 @@
 
 This project is a modular, ECS-based implementation of two popular Nintendo Land attractions: **Mario Chase** and **Luigi's Ghost Mansion**.
 
+## Quick Links
+- [**Technical Repository Guide**](./REPOSITORY_GUIDE.md) - Start here for code overview and architecture.
+- [**System Architecture & Networking**](./nintendoland_system_architecture_ecs_networking.md) - Detailed technical specs.
+- [**Asset Pipeline**](./ASSETS.md) - How assets are managed.
+
 ## Milestone 0: Project Foundation
 
 This repository has been stabilized with a shared runtime supporting separate phases:
@@ -13,9 +18,10 @@ This repository has been stabilized with a shared runtime supporting separate ph
 ### Features
 
 - **ECS Architecture**: Logic decoupled into Entities, Components, and Systems.
-- **Separate Worlds**: State is partitioned by phase to prevent "bleeding" between menus and matches.
+- **Data-Driven Levels**: Maps and spawns defined in JSON-like structures.
+- **Asymmetric Gameplay**: Different roles have unique views and abilities.
+- **Authoritative Simulation**: Centralized logic for movement, collision, and objectives.
 - **Debug HUD**: Real-time monitoring of FPS, tick rate, and world state.
-- **Asset Pipeline**: Established conventions for managing game resources.
 
 ## How to Play Locally
 
@@ -36,18 +42,6 @@ To bypass browser CORS restrictions for ES modules, you must serve the project v
 
 - **WASD**: Move
 - **Shift**: Sprint
-- **Space**: Primary Ability (Flashlight for Hunters)
+- **Space**: Primary Ability (Flashlight for Hunters / Burst for Mario)
 - **M**: Toggle Minimap
 - **R**: Restart Round
-
-## Project Structure
-
-- `index.html`: Main entry point and UI structure.
-- `js/main.js`: Game loop and system orchestration.
-- `js/game-state.js`: Central state and world management.
-- `js/app.js`: Phase-specific world initialization (Lobby, Match).
-- `js/ui.js`: HUD and phase transitions.
-- `js/render.js`: Rendering engine.
-- `js/debug.js`: Debug HUD metrics and rendering.
-- `js/assets.js`: Centralized asset management.
-- `ASSETS.md`: Asset pipeline documentation.
