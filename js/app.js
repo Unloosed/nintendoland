@@ -61,6 +61,9 @@ export function initApp() {
   const availableLevels = levels[state.mode];
   const level = availableLevels[Math.floor(Math.random() * availableLevels.length)];
   state.world.map.blockers = level.blockers;
+  state.world.map.mud = level.mud || [];
+  state.world.map.bridges = level.bridges || [];
+  state.world.map.slopes = level.slopes || [];
 
   if (state.mode === "mario_chase") {
     initMarioChase();

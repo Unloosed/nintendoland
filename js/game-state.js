@@ -27,6 +27,8 @@ export const state = {
     toastTimer: 0,
     lastKnownThreat: null,
   },
+  marioHeadStart: 0,
+  marioPath: [],
 };
 
 // Helper to get current active world
@@ -78,6 +80,10 @@ export function resetState() {
   state.worlds[Phases.MATCH] = createWorld();
   state.worlds[Phases.RESULTS] = createWorld();
   state.ui.lastKnownThreat = null;
+  state.marioHeadStart = 0;
+  state.marioPath = [];
+  state.starSpawned = false;
+  state.marioZoneHint = null;
 }
 
 export function setPhase(phase) {

@@ -27,6 +27,7 @@ export function render() {
   }
 
   drawGrid(width, height);
+  drawTerrain(state.world.map);
   drawBlockers(state.world.map.blockers);
 
   const visibleEntities = filterWorldForRole(state.world, state.playerId);
@@ -41,6 +42,10 @@ export function render() {
 
   if (state.ui.showMinimap) {
     drawMinimap(visibleEntities);
+  }
+
+  if (state.currentPhase === Phases.RESULTS && state.mode === "mario_chase") {
+    drawMarioPath();
   }
 
   drawDebugHUD(ctx);
@@ -64,6 +69,38 @@ function drawGrid(w, h) {
     ctx.stroke();
   }
   ctx.restore();
+}
+
+function drawTerrain(map) {
+  // Mud
+  (map.mud || []).forEach(m => {
+    ctx.fillStyle = "rgba(101, 67, 33, 0.4)"; // Mud brown
+    ctx.fillRect(m.x, m.y, m.w, m.h);
+  });
+
+  // Bridges
+  (map.bridges || []).forEach(b => {
+    if (b.state === "destroyed") return;
+    ctx.fillStyle = b.state === "collapsing" ? "#e67e22" : "#d35400"; // Orange if collapsing
+    ctx.fillRect(b.x, b.y, b.w, b.h);
+    // Planks
+    ctx.strokeStyle = "rgba(0,0,0,0.2)";
+    for (let x = b.x; x < b.x + b.w; x += 20) {
+      ctx.strokeRect(x, b.y, 20, b.h);
+    }
+  });
+
+  // Slopes (Visual hint)
+  (map.slopes || []).forEach(s => {
+    ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
+    ctx.fillRect(s.x, s.y, s.w, s.h);
+    // Draw arrows for slope dir
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.2)";
+    ctx.beginPath();
+    ctx.moveTo(s.x + s.w/2, s.y + s.h/2);
+    ctx.lineTo(s.x + s.w/2 + s.dirX * 30, s.y + s.h/2 + s.dirY * 30);
+    ctx.stroke();
+  });
 }
 
 function drawBlockers(blockers) {
@@ -145,6 +182,18 @@ function drawEntity(entity) {
     ctx.fill();
   }
 
+  if (entity.superStarTimer > 0) {
+    ctx.strokeStyle = `hsl(${state.tick * 10 % 360}, 100%, 50%)`;
+    ctx.lineWidth = 5;
+    ctx.stroke();
+    // Star Glow
+    const starGrad = ctx.createRadialGradient(entity.x, entity.y, entity.radius, entity.x, entity.y, entity.radius * 2);
+    starGrad.addColorStop(0, "rgba(241, 196, 15, 0.4)");
+    starGrad.addColorStop(1, "rgba(241, 196, 15, 0)");
+    ctx.fillStyle = starGrad;
+    ctx.fillRect(entity.x - entity.radius * 2, entity.y - entity.radius * 2, entity.radius * 4, entity.radius * 4);
+  }
+
   if (entity.id === state.playerId) {
     ctx.strokeStyle = "#30d5c8";
     ctx.lineWidth = 3;
@@ -185,6 +234,23 @@ function drawSpecializedUI(entity) {
   }
 }
 
+function drawMarioPath() {
+  if (!state.marioPath || state.marioPath.length < 2) return;
+  
+  ctx.save();
+  applyCamera(ctx, canvas); // We want to see it on the map
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+  ctx.setLineDash([5, 5]);
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(state.marioPath[0].x, state.marioPath[0].y);
+  for (let i = 1; i < state.marioPath.length; i++) {
+    ctx.lineTo(state.marioPath[i].x, state.marioPath[i].y);
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
 function drawDistanceHints() {
   const player = state.world.entities.find(e => e.id === state.playerId);
   if (state.mode === "mario_chase" && player && player.role === "chaser") {
@@ -193,6 +259,12 @@ function drawDistanceHints() {
     ctx.font = "bold 24px Orbitron";
     const d = Math.round(player.marioDistance || 0);
     ctx.fillText(`Distance: ${d}m`, canvas.width / 2 - 80, 80);
+
+    if (state.marioZoneHint) {
+      ctx.font = "italic 18px Inter";
+      ctx.fillStyle = "#f1c40f";
+      ctx.fillText(state.marioZoneHint, canvas.width / 2 - 100, 110);
+    }
     ctx.restore();
   }
 }

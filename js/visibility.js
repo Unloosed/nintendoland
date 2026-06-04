@@ -12,13 +12,17 @@ export function filterWorldForRole(world, observerId) {
     const filtered = { ...entity };
 
     if (state.mode === "mario_chase") {
-      if (observer.role === "chaser" && entity.role === "mario") {
-        if (!entity.revealTimer && dist(observer, entity) > 300) {
-          // Hide precise position if too far and not revealed
-          delete filtered.x;
-          delete filtered.y;
-          filtered.hidden = true;
+      if (observer.role === "chaser") {
+        if (entity.role === "mario") {
+          if (!entity.revealTimer && dist(observer, entity) > 300) {
+            // Hide precise position if too far and not revealed
+            delete filtered.x;
+            delete filtered.y;
+            filtered.hidden = true;
+          }
         }
+      } else if (observer.role === "mario") {
+        // Mario sees everything!
       }
     } else if (state.mode === "ghost_mansion") {
       if (observer.role === "tracker" && entity.role === "ghost") {

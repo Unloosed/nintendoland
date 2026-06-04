@@ -181,7 +181,17 @@ export function updateHUD() {
     document.getElementById("resultTitle").textContent = state.result.success
       ? "Victory"
       : "Defeat";
-    document.getElementById("resultBody").textContent = state.result.reason;
+
+    let stats = state.result.reason;
+    if (state.mode === "mario_chase") {
+      const survived = Math.floor((120000 - state.timeLeft) / 1000);
+      stats += `<br><br>Time Survived: ${survived}s`;
+      if (state.timeLeft > 0 && !state.result.success && state.role === "mario") {
+         stats += "<br>Captured!";
+      }
+    }
+
+    document.getElementById("resultBody").innerHTML = stats;
     resultOverlay.classList.remove("hidden");
   }
 }

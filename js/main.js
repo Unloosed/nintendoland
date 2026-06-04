@@ -46,6 +46,13 @@ function init() {
           interactionSystem(state.world, dt);
           objectiveSystem(state.world, dt);
           scoringSystem(state.world);
+
+          if (state.mode === "mario_chase" && state.tick % 15 === 0) {
+            const mario = state.world.entities.find(e => e.role === "mario");
+            if (mario) {
+              state.marioPath.push({ x: mario.x, y: mario.y });
+            }
+          }
         }
 
         if (isKeyPressed("KeyR")) {

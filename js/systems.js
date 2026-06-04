@@ -1,5 +1,5 @@
 import { getActions } from "./input.js";
-import { state } from "./game-state.js";
+import { state, createEntity } from "./game-state.js";
 
 export function movementSystem(world, dt) {
   world.entities.forEach((entity) => {
@@ -86,18 +86,44 @@ function getMovementConfig(entity) {
     turnRate: 10
   };
 
+  // Terrain modifiers
+  const map = state.world.map;
+  if (state.mode === "mario_chase") {
+    // Mud slowdown
+    const inMud = (map.mud || []).some(m =>
+      entity.x > m.x && entity.x < m.x + m.w &&
+      entity.y > m.y && entity.y < m.y + m.h
+    );
+    if (inMud && entity.superStarTimer <= 0) {
+      config.maxSpeed *= 0.5;
+    }
+
+    // Slopes
+    (map.slopes || []).forEach(s => {
+      if (entity.x > s.x && entity.x < s.x + s.w &&
+          entity.y > s.y && entity.y < s.y + s.h) {
+        // Simple slope effect: if moving with slope dir, speed up. if against, slow down.
+        const speed = Math.hypot(entity.vx, entity.vy);
+        if (speed > 10) {
+          const dot = (entity.vx / speed) * s.dirX + (entity.vy / speed) * s.dirY;
+          config.maxSpeed *= (1 + dot * 0.3);
+        }
+      }
+    });
+  }
+
   if (state.mode === "mario_chase") {
     if (entity.role === "mario") {
-      config.maxSpeed = 172;
-      config.acceleration = 12;
-      if (entity.burstTimer > 0) config.maxSpeed *= 1.5;
-    } else {
       config.maxSpeed = 158;
+      config.acceleration = 12;
+      if (entity.superStarTimer > 0) config.maxSpeed *= 1.4;
+      if (entity.burstTimer > 0) config.maxSpeed *= 1.5;
+      if (entity.stunTimer > 0) config.maxSpeed *= 0.3;
+    } else {
+      config.maxSpeed = 172;
       config.acceleration = 10;
+      if (entity.stunTimer > 0) config.maxSpeed = 0;
     }
-  } else if (state.mode === "ghost_mansion") {
-    if (entity.role === "ghost") {
-      config.maxSpeed = 165;
     } else if (entity.role === "tracker") {
       config.maxSpeed = 155;
       if (entity.battery <= 0) config.maxSpeed *= 0.5;
@@ -126,13 +152,36 @@ function normalizeAngle(a) {
 }
 
 function checkCollision(world, x, y, radius) {
-  return world.map.blockers.some(
+  const isBlocker = world.map.blockers.some(
     (b) =>
       x + radius > b.x &&
       x - radius < b.x + b.w &&
       y + radius > b.y &&
       y - radius < b.y + b.h,
   );
+  if (isBlocker) return true;
+
+  // Collapsible Bridges
+  const onBridge = (world.map.bridges || []).some(b => {
+    if (b.state === "destroyed") return false;
+    const hit = x + radius > b.x && x - radius < b.x + b.w &&
+                y + radius > b.y && y - radius < b.y + b.h;
+    if (hit) {
+      // Mario collapses the bridge
+      const mario = world.entities.find(e => e.role === "mario");
+      if (mario && dist({x, y}, mario) < 5) { // If the entity checking collision is Mario (approx)
+         if (b.state === "intact") b.state = "collapsing";
+      }
+      return true;
+    }
+    return false;
+  });
+
+  return false; // Bridges are NOT blockers for Toads until they collapse
+  // Wait, bridges should allow crossing unless destroyed.
+  // Actually, blockers should be solid. Mud is not solid.
+  // Specs say: Mario crossing a bridge causes it to collapse. Toads can cross indefinitely before collapse.
+  // So a bridge is NOT a blocker.
 }
 
 export function batterySystem(world, dt) {
@@ -161,6 +210,8 @@ export function visibilitySystem(world, dt) {
 
   if (state.mode === "mario_chase" && mario) {
     const chasers = world.entities.filter(e => e.role === "chaser");
+    const yoshis = world.entities.filter(e => e.role === "yoshi_cart");
+
     chasers.forEach(chaser => {
       const d = dist(chaser, mario);
       chaser.marioDistance = d;
@@ -168,6 +219,13 @@ export function visibilitySystem(world, dt) {
       // Reveal Mario if very close
       if (d < 150) {
         mario.revealTimer = 0.5;
+      }
+    });
+
+    state.marioZoneHint = null;
+    yoshis.forEach(yoshi => {
+      if (dist(yoshi, mario) < 300) {
+        state.marioZoneHint = `Mario spotted in ${getZoneName(mario.x, mario.y)} zone!`;
       }
     });
   }
@@ -207,6 +265,59 @@ export function visibilitySystem(world, dt) {
 }
 
 export function interactionSystem(world, dt) {
+  // Bridge Update Logic
+  (state.world.map.bridges || []).forEach(b => {
+    if (b.state === "collapsing") {
+      b.collapseTimer = (b.collapseTimer || 2.0) - dt;
+      if (b.collapseTimer <= 0) {
+        b.state = "destroyed";
+      }
+    }
+  });
+
+  const mario = world.entities.find((e) => e.role === "mario");
+  const yoshis = world.entities.filter((e) => e.role === "yoshi_cart");
+  const chasers = world.entities.filter((e) => e.role === "chaser");
+
+  if (state.mode === "mario_chase" && mario) {
+    // Super Star Spawning
+    if (!state.starSpawned && (120000 - state.timeLeft) >= 30000) {
+      createEntity({
+        type: "powerup",
+        kind: "super_star",
+        x: 640,
+        y: 360,
+        radius: 12,
+        color: "#f1c40f"
+      });
+      state.starSpawned = true;
+    }
+
+    if (mario.superStarTimer > 0) {
+      mario.superStarTimer -= dt;
+      // Knockback chasers and yoshis
+      [...chasers, ...yoshis].forEach(other => {
+        if (dist(mario, other) < mario.radius + other.radius + 10) {
+          const dx = other.x - mario.x;
+          const dy = other.y - mario.y;
+          const angle = Math.atan2(dy, dx);
+          other.vx = Math.cos(angle) * 400;
+          other.vy = Math.sin(angle) * 400;
+          other.stunTimer = 1.0;
+        }
+      });
+    }
+
+    yoshis.forEach((yoshi) => {
+      if (dist(mario, yoshi) < mario.radius + yoshi.radius) {
+        if (mario.superStarTimer > 0) return;
+        mario.stunTimer = 1.5; // Stun Mario for 1.5s
+      }
+    });
+
+    if (mario.stunTimer > 0) mario.stunTimer -= dt;
+  }
+
   const ghost = world.entities.find((e) => e.role === "ghost");
   const trackers = world.entities.filter((e) => e.role === "tracker");
 
@@ -257,6 +368,8 @@ export function interactionSystem(world, dt) {
           } else if (pu.kind === "super_battery") {
             collector.battery = 100;
             collector.superBatteryTimer = 10;
+          } else if (pu.kind === "super_star") {
+            collector.superStarTimer = 15; // 15 seconds of power
           }
           pu.alive = false;
         }
@@ -264,6 +377,15 @@ export function interactionSystem(world, dt) {
     });
 
   world.entities = world.entities.filter((e) => e.alive !== false);
+}
+
+function getZoneName(x, y) {
+  const midX = 640;
+  const midY = 360;
+  if (x < midX && y < midY) return "RED";
+  if (x >= midX && y < midY) return "BLUE";
+  if (x < midX && y >= midY) return "GREEN";
+  return "YELLOW";
 }
 
 function dist(a, b) {
@@ -282,6 +404,7 @@ export function objectiveSystem(world, dt) {
     if (mario) {
       chasers.forEach((chaser) => {
         if (dist(mario, chaser) < mario.radius + chaser.radius) {
+          if (mario.superStarTimer > 0) return;
           state.running = false;
           state.result = {
             success: state.role === "chaser",
