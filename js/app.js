@@ -1,5 +1,6 @@
 import { state, createEntity, setPhase, Phases } from "./game-state.js";
 import { levels } from "./levels.js";
+import { findSafePosition } from "./utils.js";
 
 /**
  * Data-driven role definitions.
@@ -51,10 +52,11 @@ export function initLobby() {
     { x: 400, y: 480, w: 480, h: 40 },
   ];
 
+  const pos = findSafePosition(640, 360, 15, state.world);
   const player = createEntity({
     role: "lobby_player",
-    x: 640,
-    y: 360,
+    x: pos.x,
+    y: pos.y,
     radius: 15,
     color: "#30d5c8",
     speed: 200,
@@ -73,24 +75,27 @@ export function initApp() {
   state.world.map.slopes = level.slopes || [];
 
   if (state.mode === "mario_chase") {
-    initMarioChase();
+    initMarioChase(level);
   } else if (state.mode === "ghost_mansion") {
-    initGhostMansion();
+    initGhostMansion(level);
   }
 
   state.running = true;
   state.initialized = true;
 }
 
-function initMarioChase() {
+function initMarioChase(level) {
   state.timeLeft = 120000;
   state.marioHeadStart = 10;
   const config = Roles.mario;
 
+  const marioSpawn = level.spawns.mario;
+  const marioPos = findSafePosition(marioSpawn.x, marioSpawn.y, config.radius, state.world);
+
   const mario = createEntity({
     role: "mario",
-    x: 180,
-    y: 360,
+    x: marioPos.x,
+    y: marioPos.y,
     ...config,
     ai: state.role !== "mario",
   });
@@ -99,25 +104,27 @@ function initMarioChase() {
 
   // Yoshi Carts if only 1 human Toad
   if (state.role !== "mario") {
-    // We assume state.role === "chaser" means 1 human Toad for this implementation
-    // Ideally we'd count human players, but we follow the logic for single human Toad.
-    for (let i = 0; i < 2; i++) {
+    const yoshiSpawns = level.spawns.yoshi_cart;
+    yoshiSpawns.forEach(spawn => {
+      const pos = findSafePosition(spawn.x, spawn.y, Roles.yoshi_cart.radius, state.world);
       createEntity({
         role: "yoshi_cart",
-        x: 1100,
-        y: 100 + i * 500,
+        x: pos.x,
+        y: pos.y,
         ...Roles.yoshi_cart,
         ai: true,
       });
-    }
+    });
   }
 
-  for (let i = 0; i < 3; i++) {
+  const chaserSpawns = level.spawns.chaser;
+  chaserSpawns.forEach((spawn, i) => {
     const chaserConfig = Roles.chaser;
+    const pos = findSafePosition(spawn.x, spawn.y, chaserConfig.radius, state.world);
     const chaser = createEntity({
       role: "chaser",
-      x: 1000 + i * 30,
-      y: 200 + i * 150,
+      x: pos.x,
+      y: pos.y,
       ...chaserConfig,
       ai: true,
     });
@@ -125,17 +132,35 @@ function initMarioChase() {
       state.playerId = chaser.id;
       chaser.ai = false;
     }
-  }
+  });
+
+  // Power-ups
+  const puSpawns = level.spawns.powerup;
+  puSpawns.forEach(spawn => {
+    const pos = findSafePosition(spawn.x, spawn.y, 10, state.world);
+    createEntity({
+      type: "powerup",
+      kind: spawn.kind,
+      x: pos.x,
+      y: pos.y,
+      radius: spawn.kind === "super_star" ? 12 : 8,
+      color: spawn.kind === "super_star" ? "#f1c40f" : "#f5c451",
+      delayed: spawn.kind === "super_star"
+    });
+  });
 }
 
-function initGhostMansion() {
+function initGhostMansion(level) {
   state.timeLeft = 18000;
   const ghostConfig = Roles.ghost;
 
+  const ghostSpawn = level.spawns.ghost;
+  const ghostPos = findSafePosition(ghostSpawn.x, ghostSpawn.y, ghostConfig.radius, state.world);
+
   const ghost = createEntity({
     role: "ghost",
-    x: 190,
-    y: 360,
+    x: ghostPos.x,
+    y: ghostPos.y,
     ...ghostConfig,
     energy: 100,
     ai: state.role !== "ghost",
@@ -143,12 +168,14 @@ function initGhostMansion() {
 
   if (state.role === "ghost") state.playerId = ghost.id;
 
-  for (let i = 0; i < 3; i++) {
+  const trackerSpawns = level.spawns.tracker;
+  trackerSpawns.forEach((spawn, i) => {
     const trackerConfig = Roles.tracker;
+    const pos = findSafePosition(spawn.x, spawn.y, trackerConfig.radius, state.world);
     const tracker = createEntity({
       role: "tracker",
-      x: 1100 + i * 40,
-      y: 100 + i * 200,
+      x: pos.x,
+      y: pos.y,
       ...trackerConfig,
       battery: 100,
       fainted: false,
@@ -160,9 +187,19 @@ function initGhostMansion() {
       state.playerId = tracker.id;
       tracker.ai = false;
     }
-  }
+  });
 
   // Power-ups
-  createEntity({ type: "powerup", kind: "battery", x: 640, y: 360, radius: 8, color: "#f5c451" });
-  createEntity({ type: "powerup", kind: "super_battery", x: 640, y: 100, radius: 10, color: "#30d5c8" });
+  const puSpawns = level.spawns.powerup;
+  puSpawns.forEach(spawn => {
+    const pos = findSafePosition(spawn.x, spawn.y, 10, state.world);
+    createEntity({
+      type: "powerup",
+      kind: spawn.kind,
+      x: pos.x,
+      y: pos.y,
+      radius: spawn.kind === "super_battery" ? 10 : 8,
+      color: spawn.kind === "super_battery" ? "#30d5c8" : "#f5c451"
+    });
+  });
 }

@@ -1,5 +1,6 @@
 import { getActions } from "./input.js";
 import { state, createEntity } from "./game-state.js";
+import { checkCollision, dist, lerp, lerpAngle, normalizeAngle, getZoneName } from "./utils.js";
 
 export function movementSystem(world, dt) {
   world.entities.forEach((entity) => {
@@ -145,57 +146,6 @@ function getMovementConfig(entity) {
   return config;
 }
 
-function lerp(a, b, t) {
-  return a + (b - a) * Math.min(1, t);
-}
-
-function lerpAngle(a, b, t) {
-  const d = normalizeAngle(b - a);
-  return a + d * Math.min(1, t);
-}
-
-function normalizeAngle(a) {
-  while (a > Math.PI) a -= Math.PI * 2;
-  while (a < -Math.PI) a += Math.PI * 2;
-  return a;
-}
-
-function checkCollision(world, x, y, radius) {
-  const isBlocker = world.map.blockers.some(
-    (b) =>
-      x + radius > b.x &&
-      x - radius < b.x + b.w &&
-      y + radius > b.y &&
-      y - radius < b.y + b.h,
-  );
-  if (isBlocker) return true;
-
-  // Collapsible Bridges
-  const onBridge = (world.map.bridges || []).some(b => {
-    if (b.state === "destroyed") return false;
-    const hit = x + radius > b.x && x - radius < b.x + b.w &&
-                y + radius > b.y && y - radius < b.y + b.h;
-    if (hit) {
-      // Mario collapses the bridge
-      const mario = world.entities.find(e => e.role === "mario");
-      // Check if the entity being checked is Mario
-      const isMario = mario && Math.abs(x - mario.x) < 1 && Math.abs(y - mario.y) < 1;
-      if (isMario && b.state === "intact") {
-        b.state = "collapsing";
-        b.collapseTimer = 2.0;
-      }
-      return true;
-    }
-    return false;
-  });
-
-  return false;
-  // Wait, bridges should allow crossing unless destroyed.
-  // Actually, blockers should be solid. Mud is not solid.
-  // Specs say: Mario crossing a bridge causes it to collapse. Toads can cross indefinitely before collapse.
-  // So a bridge is NOT a blocker.
-}
-
 export function batterySystem(world, dt) {
   world.entities.forEach((entity) => {
     if (state.mode === "ghost_mansion" && entity.role === "tracker") {
@@ -284,6 +234,15 @@ export function interactionSystem(world, dt) {
       if (b.collapseTimer <= 0) {
         b.state = "destroyed";
       }
+    } else if (b.state === "intact") {
+       // Check if Mario is on the bridge
+       const mario = world.entities.find(e => e.role === "mario");
+       if (mario &&
+           mario.x > b.x && mario.x < b.x + b.w &&
+           mario.y > b.y && mario.y < b.y + b.h) {
+         b.state = "collapsing";
+         b.collapseTimer = 2.0;
+       }
     }
   });
 
@@ -292,19 +251,6 @@ export function interactionSystem(world, dt) {
   const chasers = world.entities.filter((e) => e.role === "chaser");
 
   if (state.mode === "mario_chase" && mario) {
-    // Super Star Spawning
-    if (!state.starSpawned && (120000 - state.timeLeft) >= 30000) {
-      createEntity({
-        type: "powerup",
-        kind: "super_star",
-        x: 640,
-        y: 360,
-        radius: 12,
-        color: "#f1c40f"
-      });
-      state.starSpawned = true;
-    }
-
     if (mario.superStarTimer > 0) {
       mario.superStarTimer -= dt;
       // Knockback chasers and yoshis
@@ -372,6 +318,14 @@ export function interactionSystem(world, dt) {
   world.entities
     .filter((e) => e.type === "powerup")
     .forEach((pu) => {
+      // Handle delayed powerups (Super Star in Mario Chase)
+      if (pu.delayed) {
+        if ((120000 - state.timeLeft) < 30000) {
+          return; // Not yet spawned
+        }
+        pu.delayed = false; // Spawn it
+      }
+
       const collectors = world.entities.filter(e => e.role === "tracker" || e.role === "chaser" || e.role === "mario");
       collectors.forEach((collector) => {
         if (!collector.fainted && dist(collector, pu) < collector.radius + pu.radius) {
@@ -389,19 +343,6 @@ export function interactionSystem(world, dt) {
     });
 
   world.entities = world.entities.filter((e) => e.alive !== false);
-}
-
-function getZoneName(x, y) {
-  const midX = 640;
-  const midY = 360;
-  if (x < midX && y < midY) return "RED";
-  if (x >= midX && y < midY) return "BLUE";
-  if (x < midX && y >= midY) return "GREEN";
-  return "YELLOW";
-}
-
-function dist(a, b) {
-  return Math.hypot(a.x - b.x, a.y - b.y);
 }
 
 export function objectiveSystem(world, dt) {
