@@ -14,7 +14,12 @@ export function updateCamera(dt) {
   if (!player) return;
 
   // Camera profile based on role
-  if (player.role === "mario" || player.role === "ghost" || player.role === "lobby_player") {
+  if (player.role === "mario") {
+    // Mario sees the whole arena
+    Camera.targetX = 640;
+    Camera.targetY = 360;
+    Camera.zoom = 0.8;
+  } else if (player.role === "ghost" || player.role === "lobby_player" || player.role === "chaser") {
     // Third-person chase (follows player closely)
     Camera.targetX = player.x;
     Camera.targetY = player.y;

@@ -153,6 +153,8 @@ export function updateHUD() {
   if (timerEl) {
     if (state.currentPhase === Phases.LOBBY) {
       timerEl.textContent = "--:--";
+    } else if (state.mode === "mario_chase" && state.marioHeadStart > 0) {
+      timerEl.textContent = `HEAD START: ${Math.ceil(state.marioHeadStart)}`;
     } else {
       const totalSec = Math.ceil(state.timeLeft / 1000);
       const mm = String(Math.floor(totalSec / 60)).padStart(2, "0");

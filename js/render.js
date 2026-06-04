@@ -40,7 +40,7 @@ export function render() {
 
   ctx.restore();
 
-  if (state.ui.showMinimap) {
+  if (state.ui.showMinimap && state.role === "mario") {
     drawMinimap(visibleEntities);
   }
 
@@ -72,6 +72,26 @@ function drawGrid(w, h) {
 }
 
 function drawTerrain(map) {
+  if (state.mode === "mario_chase") {
+    const midX = map.width / 2;
+    const midY = map.height / 2;
+    ctx.save();
+    ctx.globalAlpha = 0.2;
+    // Red (NW)
+    ctx.fillStyle = "#e74c3c";
+    ctx.fillRect(0, 0, midX, midY);
+    // Blue (NE)
+    ctx.fillStyle = "#3498db";
+    ctx.fillRect(midX, 0, midX, midY);
+    // Green (SW)
+    ctx.fillStyle = "#2ecc71";
+    ctx.fillRect(0, midY, midX, midY);
+    // Yellow (SE)
+    ctx.fillStyle = "#f1c40f";
+    ctx.fillRect(midX, midY, midX, midY);
+    ctx.restore();
+  }
+
   // Mud
   (map.mud || []).forEach(m => {
     ctx.fillStyle = "rgba(101, 67, 33, 0.4)"; // Mud brown
